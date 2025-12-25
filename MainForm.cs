@@ -1,4 +1,4 @@
-using DocumentFormat.OpenXml.Spreadsheet;
+ï»¿using DocumentFormat.OpenXml.Spreadsheet;
 using ReaLTaiizor.Controls;
 using ScottPlot;
 using ScottPlot.WinForms;
@@ -31,9 +31,9 @@ namespace jiazhua
                 data.Add(new { Value = i, Text = $"CH{i}" });
             }
 
-            // °ó¶¨µ½¶àÑ¡ ComboBox
+            // ç»‘å®šåˆ°å¤šé€‰ ComboBox
             uCheckComboBox1.BindingDataList(data, "Value", "Text");
-            // Ä¬ÈÏÈ«Ñ¡
+            // é»˜è®¤å…¨é€‰
             uCheckComboBox1.CheckAll();
 
             var data2 = new List<object>();
@@ -43,9 +43,9 @@ namespace jiazhua
                 data2.Add(new { Value = i, Text = $"CH{i}" });
             }
 
-            // °ó¶¨µ½¶àÑ¡ ComboBox
+            // ç»‘å®šåˆ°å¤šé€‰ ComboBox
             uCheckComboBox2.BindingDataList(data2, "Value", "Text");
-            // Ä¬ÈÏÈ«Ñ¡
+            // é»˜è®¤å…¨é€‰
             uCheckComboBox2.CheckAll();
             LoadPorts();
             LoadFromJson();
@@ -78,16 +78,16 @@ namespace jiazhua
             if (data.TryGetValue("foreverComboBox_rate", out object value2))
             {
                 foreverComboBox_rate.SelectedIndex = int.Parse(value2.ToString());
-                updateSaveRate(); // ¸üĞÂ±£´æÆµÂÊ
+                updateSaveRate(); // æ›´æ–°ä¿å­˜é¢‘ç‡
             }
         }
 
-        #region ²Ù×÷À¸
+        #region æ“ä½œæ 
         private void button1_Click(object sender, EventArgs e)
         {
             using (var dialog = new FolderBrowserDialog())
             {
-                dialog.Description = "ÇëÑ¡ÔñÒ»¸öÎÄ¼ş¼Ğ";
+                dialog.Description = "è¯·é€‰æ‹©ä¸€ä¸ªæ–‡ä»¶å¤¹";
                 dialog.ShowNewFolderButton = true;
 
                 if (dialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(dialog.SelectedPath))
@@ -123,7 +123,7 @@ namespace jiazhua
         {
             List<string> selected12 = uCheckComboBox1.GetSelectedTexts();
 
-            // »æÖÆ Sensor 12 (formsPlot1)
+            // ç»˜åˆ¶ Sensor 12 (formsPlot1)
             RedrawSelectedChannels(formsPlot1, selected12, 12);
         }
 
@@ -131,7 +131,7 @@ namespace jiazhua
         {
             List<string> selected32 = uCheckComboBox2.GetSelectedTexts();
 
-            // »æÖÆ Sensor 32 (formsPlot2)
+            // ç»˜åˆ¶ Sensor 32 (formsPlot2)
             RedrawSelectedChannels(formsPlot2, selected32, 32);
         }
 
@@ -205,7 +205,7 @@ namespace jiazhua
         }
         #endregion
 
-        #region ´®¿Ú
+        #region ä¸²å£
         private SerialPort serialPort = new SerialPort();
         private StreamWriter packetWriter;
         private Thread serialThread;
@@ -217,10 +217,10 @@ namespace jiazhua
             {
                 if (foreverComboBox_port.SelectedIndex == -1)
                 {
-                    MessageBox.Show("ÇëÑ¡Ôñ´®¿Ú");
+                    MessageBox.Show("è¯·é€‰æ‹©ä¸²å£");
                     return;
                 }
-                // ¹¹½¨ SerialConfig ¶ÔÏó
+                // æ„å»º SerialConfig å¯¹è±¡
                 try
                 {
                     serialPort.PortName = foreverComboBox_port.SelectedItem.ToString();
@@ -234,18 +234,18 @@ namespace jiazhua
 
                     if (serialPort.IsOpen)
                     {
-                        label_port.Text = "ÒÑÁ¬½Ó";
+                        label_port.Text = "å·²è¿æ¥";
                     }
 
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("´ò¿ª´®¿ÚÊ§°Ü: " + ex.Message);
+                    MessageBox.Show("æ‰“å¼€ä¸²å£å¤±è´¥: " + ex.Message);
                 }
             }
             else
             {
-                MessageBox.Show("´®¿ÚÒÑ¿ªÆô");
+                MessageBox.Show("ä¸²å£å·²å¼€å¯");
             }
         }
 
@@ -255,26 +255,26 @@ namespace jiazhua
             {
                 if (!serialPort.IsOpen)
                 {
-                    MessageBox.Show("ÇëÏÈÁ¬½Ó´®¿Ú£¡", "´íÎó", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("è¯·å…ˆè¿æ¥ä¸²å£ï¼", "é”™è¯¯", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 //serialPort.Close();
                 CloseSerialPort();
 
-                // ×îºó flush & close
+                // ï¿½ï¿½ï¿½ flush & close
                 packetWriter?.Flush();
                 packetWriter?.Close();
                 packetWriter = null;
 
-                label_port.Text = "Î´Á¬½Ó";
+                label_port.Text = "æœªè¿æ¥";
             }
             catch (Exception ex)
             {
-                MessageBox.Show("¹Ø±ÕÁ¬½ÓÊ§°Ü£¬Çë¼ì²é´®¿Ú×´Ì¬£¡", "´íÎó", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("å…³é—­è¿æ¥å¤±è´¥ï¼Œè¯·æ£€æŸ¥ä¸²å£çŠ¶æ€ï¼", "é”™è¯¯", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         /// <summary>
-        /// ´ò¿ª´®¿Ú
+        /// æ‰“å¼€ä¸²å£
         /// </summary>
         private void OpenSerialPort()
         {
@@ -289,33 +289,33 @@ namespace jiazhua
 
                 guiyihua = checkBox1.Checked;
 
-                // Æô¶¯ºóÌ¨¶ÁÈ¡Ïß³Ì
+                // å¯åŠ¨åå°è¯»å–çº¿ç¨‹
                 cts = new CancellationTokenSource();
                 serialThread = new Thread(() => SerialReadLoop(cts.Token));
                 serialThread.IsBackground = true;
                 serialThread.Start();
 
                 savePath = crownTextBox_save.Text;
-                // Éú³ÉÎÄ¼şÂ·¾¶
+                // ç”Ÿæˆæ–‡ä»¶è·¯å¾„
                 string fileSavePath = System.IO.Path.Combine(savePath,
                     $"MEMS_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
 
-                // ´´½¨È«¾Ö StreamWriter£¬²»Ğ´±íÍ·
+                // åˆ›å»ºå…¨å±€ StreamWriterï¼Œä¸å†™è¡¨å¤´
                 packetWriter = new StreamWriter(fileSavePath, true, new System.Text.UTF8Encoding(false));
 
                 packetWriter.WriteLine(string.Join(",", biaoTouName));
 
-                packetWriter.AutoFlush = true; // Ã¿´ÎĞ´Èë×Ô¶¯Ë¢ĞÂ
+                packetWriter.AutoFlush = true; // Ã¿ï¿½ï¿½Ğ´ï¿½ï¿½ï¿½Ô¶ï¿½Ë¢ï¿½ï¿½
 
                 StartWorkers();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("´ò¿ª´®¿ÚÊ§°Ü: " + ex.Message);
+                MessageBox.Show("æ‰“å¼€ä¸²å£å¤±è´¥: " + ex.Message);
             }
         }
         /// <summary>
-        /// ¹Ø±Õ´®¿Ú
+        /// å…³é—­ä¸²å£
         /// </summary>
         private void CloseSerialPort()
         {
@@ -333,12 +333,12 @@ namespace jiazhua
             }
             catch (Exception ex)
             {
-                MessageBox.Show("¹Ø±Õ´®¿ÚÊ§°Ü: " + ex.Message);
+                MessageBox.Show("å…³é—­ä¸²å£å¤±è´¥: " + ex.Message);
             }
         }
         #endregion
 
-        #region ÎÄ¼ş´æ´¢Ïß³Ì
+        #region æ–‡ä»¶å­˜å‚¨çº¿ç¨‹
         private readonly BlockingCollection<string> fileQueue = new BlockingCollection<string>(new ConcurrentQueue<string>(), 20000);
         private readonly BlockingCollection<List<string>> fileRawQueue = new BlockingCollection<List<string>>(new ConcurrentQueue<List<string>>(), 20000);
         private Thread fileWriterThread;
@@ -349,11 +349,11 @@ namespace jiazhua
 
         private void StartWorkers()
         {
-            // Æô¶¯¸ñÊ½»¯¹¤ÈËÏß³Ì
+            // å¯åŠ¨æ ¼å¼åŒ–å·¥äººçº¿ç¨‹
             formatThread = new Thread(FormatWorkerLoop) { IsBackground = true, Name = "FormatWorker" };
             formatThread.Start();
 
-            // ÄãÔ­À´µÄ fileWriterThread Î¬³Ö²»±ä
+            // ä½ åŸæ¥çš„ fileWriterThread ç»´æŒä¸å˜
             fileWriterThread = new Thread(FileWriterLoop) { IsBackground = true, Name = "FileWriter" };
             fileWriterThread.Start();
         }
@@ -379,12 +379,12 @@ namespace jiazhua
                             packetWriter.Flush();
                         }
 
-                        // UI ¸üĞÂ£¨±£³ÖÄãµÄÂß¼­£©
+                        // UI æ›´æ–°ï¼ˆä¿æŒä½ çš„é€»è¾‘ï¼‰
                         if (label_save.InvokeRequired)
                             label_save.BeginInvoke(new Action(() =>
-                                label_save.Text = $"ÒÑ´æ°üÊı: {savedPacketCount}"));
+                                label_save.Text = $"ï¿½Ñ´ï¿½ï¿½ï¿½ï¿½: {savedPacketCount}"));
                         else
-                            label_save.Text = $"ÒÑ´æ°üÊı: {savedPacketCount}";
+                            label_save.Text = $"å·²å­˜åŒ…æ•°: {savedPacketCount}";
                     }
 
                     Thread.Sleep(1);
@@ -392,7 +392,7 @@ namespace jiazhua
             }
             catch (Exception ex)
             {
-                MessageBox.Show("ÎÄ¼şĞ´Ïß³Ì·¢Éú´íÎó: " + ex.Message, "´íÎó",
+                MessageBox.Show("æ–‡ä»¶å†™çº¿ç¨‹å‘ç”Ÿé”™è¯¯: " + ex.Message, "é”™è¯¯",
                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -400,7 +400,6 @@ namespace jiazhua
         {
             try
             {
-
                 foreach (var packet in fileRawQueue.GetConsumingEnumerable())
                 {
                     string line = "";
@@ -408,12 +407,10 @@ namespace jiazhua
 
                     if (line == null) continue;
 
-                    // fileQueue ÓĞ½ç + ¶ª×î¾É£¬È·±£²»¶Ñ»ı
+                    // fileQueue æœ‰ç•Œ + ä¸¢æœ€æ—§ï¼Œç¡®ä¿ä¸å †ç§¯
                     if (fileQueue.Count >= 20000) fileQueue.TryTake(out _);
                     fileQueue.Add(line);
                 }
-
-
             }
             catch (Exception ex)
             {
@@ -425,17 +422,17 @@ namespace jiazhua
         {
             if (packet == null) return null;
 
-            // ³õÊ¼»¯»º´æ£¨Ö»ÔÚµÚÒ»´Îµ÷ÓÃÊ±·ÖÅä£©
+            // åˆå§‹åŒ–ç¼“å­˜ï¼ˆåªåœ¨ç¬¬ä¸€æ¬¡è°ƒç”¨æ—¶åˆ†é…ï¼‰
             if (_sbCache == null) _sbCache = new StringBuilder(4096);
 
-            // Çå¿Õ»º´æ
+            // æ¸…ç©ºç¼“å­˜
             _sbCache.Clear();
 
-            // ÏÈĞ´Ê±¼ä´Á
+            // å…ˆå†™æ—¶é—´æˆ³
             _sbCache.Append(HighResDateTime.Now.ToString("yy:MM:dd:HH:mm:ss.fff"));
 
 
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < 65; i++)
             {
                 _sbCache.Append(',');
                 _sbCache.Append(packet[i]);
@@ -445,8 +442,8 @@ namespace jiazhua
         }
         #endregion
 
-        #region ½ÓÊÕÏß³Ì
-        private readonly object serialLock = new object(); // Ëø£¬±£Ö¤Ïß³Ì°²È«
+        #region æ¥æ”¶çº¿ç¨‹
+        private readonly object serialLock = new object(); // é”ï¼Œä¿è¯çº¿ç¨‹å®‰å…¨
         private byte[] lastValidPacket12 = null;
         private byte[] lastValidPacket32 = null;
         public class ListStringPool
@@ -460,7 +457,7 @@ namespace jiazhua
                     list.Clear();
                     return list;
                 }
-                return new List<string>(50); // ³õÊ¼ÈİÁ¿Ô¤·ÖÅä
+                return new List<string>(50); // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½
             }
 
             public void Return(List<string> list)
@@ -474,11 +471,11 @@ namespace jiazhua
         private const int MaxQueueSize = 200;
         private int MaxVisiblePackets = 200;
         private BlockingCollection<List<string>> uiQueue = new BlockingCollection<List<string>>(MaxQueueSize);
-        // ´´½¨È«¾Ö×ÖµäÀ´´æ´¢Ã¿¸ö addr ¶ÔÓ¦µÄÎÂ¶ÈºÍÑ¹Á¦Êı¾İ
+        // åˆ›å»ºå…¨å±€å­—å…¸æ¥å­˜å‚¨æ¯ä¸ª addr å¯¹åº”çš„æ¸©åº¦å’Œå‹åŠ›æ•°æ®
         public struct SensorData
         {
-            public List<double> TemperatureData; // ´æ´¢ÎÂ¶ÈÊı¾İ (F4)
-            public List<double> PressureData;    // ´æ´¢Ñ¹Á¦Êı¾İ (F5)
+            public List<double> TemperatureData; // ï¿½æ´¢ï¿½Â¶ï¿½ï¿½ï¿½ï¿½ï¿½ (F4)
+            public List<double> PressureData;    // ï¿½æ´¢Ñ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (F5)
 
             public SensorData()
             {
@@ -494,9 +491,9 @@ namespace jiazhua
         private Dictionary<int, Queue<double>> channelBuffers32 = new Dictionary<int, Queue<double>>();
         private Dictionary<int, Queue<double>> channelBuffers_filedata32 = new Dictionary<int, Queue<double>>();
         private Dictionary<int, Queue<double>> channelBuffers_temp32 = new Dictionary<int, Queue<double>>();
-        private double[] channelZeroOffsets12 = new double[12]; // Ä¬ÈÏÈ«Îª 0.0
+        private double[] channelZeroOffsets12 = new double[12]; // Ä¬ï¿½ï¿½È«Îª 0.0
         private readonly int[] channelZeroingCounts12 = new int[12];
-        private double[] channelZeroOffsets32 = new double[32]; // Ä¬ÈÏÈ«Îª 0.0
+        private double[] channelZeroOffsets32 = new double[32]; // Ä¬ï¿½ï¿½È«Îª 0.0
         private readonly int[] channelZeroingCounts32 = new int[32];
         private volatile bool isSaving = false;
         private DateTime lastSaveTime = DateTime.Now;
@@ -507,8 +504,8 @@ namespace jiazhua
             byte[] buffer = new byte[4096];
             const int MaxBufferSize = 65536;
             byte[] recvBuffer = new byte[MaxBufferSize];
-            int recvHead = 0; // ÓĞĞ§Êı¾İÆğÊ¼
-            int recvTail = 0; // ÓĞĞ§Êı¾İÄ©Î²
+            int recvHead = 0; // æœ‰æ•ˆæ•°æ®èµ·å§‹
+            int recvTail = 0; // æœ‰æ•ˆæ•°æ®æœ«å°¾
 
             ArrayPool<byte> pool = ArrayPool<byte>.Shared;
 
@@ -517,19 +514,19 @@ namespace jiazhua
                 try
                 {
 
-                    // === ´®¿Ú½ÓÊÕ ===
+                    // === ä¸²å£æ¥æ”¶ ===
                     int bytesRead = serialPort.Read(buffer, 0, buffer.Length);
                     if (bytesRead <= 0) continue;
 
                     lock (serialLock)
                     {
-                        // Ğ´Èë»·ĞÎ»º³åÇø
+                        // å†™å…¥ç¯å½¢ç¼“å†²åŒº
                         for (int i = 0; i < bytesRead; i++)
                         {
                             recvBuffer[recvTail] = buffer[i];
                             recvTail = (recvTail + 1) % MaxBufferSize;
 
-                            if (recvTail == recvHead) // ¸²¸ÇÄ£Ê½
+                            if (recvTail == recvHead) // ï¿½ï¿½ï¿½ï¿½Ä£Ê½
                                 recvHead = (recvHead + 1) % MaxBufferSize;
                         }
 
@@ -550,7 +547,7 @@ namespace jiazhua
                             CopyFromRingBuffer(recvBuffer, recvHead, packet, length, MaxBufferSize);
                             recvHead = (recvHead + length) % MaxBufferSize;
 
-                            // Ğ£Ñé
+                            // æ ¡éªŒ
                             byte checksum = 0;
                             for (int i = 2; i < length - 1; i++)
                                 checksum += packet[i];
@@ -574,26 +571,26 @@ namespace jiazhua
                 {
                     if (ex.Message != "The operation was canceled.")
                     {
-                        MessageBox.Show("´®¿Ú¶ÁÈ¡Òì³££º" + ex.Message);
+                        MessageBox.Show("ä¸²å£è¯»å–å¼‚å¸¸ï¼š" + ex.Message);
                         break;
                     }
 
                 }
             }
         }
-        /// <summary> ¼ÆËã»·ĞÎ»º³åÇø¿ÉÓÃ×Ö½ÚÊı </summary>
+        /// <summary> è®¡ç®—ç¯å½¢ç¼“å†²åŒºå¯ç”¨å­—èŠ‚æ•° </summary>
         private static int GetAvailableBytes(int head, int tail, int capacity)
         {
             return (tail - head + capacity) % capacity;
         }
 
-        /// <summary> ´Ó»·ĞÎ»º³åÇø¶ÁÈ¡Ò»¸ö×Ö½Ú </summary>
+        /// <summary> ä»ç¯å½¢ç¼“å†²åŒºè¯»å–ä¸€ä¸ªå­—èŠ‚ </summary>
         private static byte PeekByte(byte[] buffer, int head, int offset, int capacity)
         {
             return buffer[(head + offset) % capacity];
         }
 
-        /// <summary> ¿½±´»·ĞÎ»º³åÇøµ½Êı×é </summary>
+        /// <summary> æ‹·è´ç¯å½¢ç¼“å†²åŒºåˆ°æ•°ç»„ </summary>
         private static void CopyFromRingBuffer(byte[] ring, int head, byte[] dest, int length, int capacity)
         {
             int firstPart = Math.Min(length, capacity - head);
@@ -617,12 +614,12 @@ namespace jiazhua
 
                 if (addr == 1)
                 {
-                    // ¸´ÓÃÊı×é
+                    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                     Span<double> values = stackalloc double[12];
 
-                    int dataOffset = 17;
+                    int dataOffset = 13;
 
-                    // Èç¹ûÊÇÎÂ¶ÈÊı¾İ (F4)
+                    // å¦‚æœæ˜¯æ¸©åº¦æ•°æ® (F4)
                     if (type == 0xF4)
                     {
                         for (int i = 0; i < 12; i++)
@@ -632,30 +629,30 @@ namespace jiazhua
                             values[11 - i] = v / 10;
                         }
 
-                        // ½«ÎÂ¶ÈÊı¾İÌí¼Óµ½×Öµä
+                        // ï¿½ï¿½ï¿½Â¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½ï¿½Öµï¿½
                         if (!addrDataDict12.ContainsKey(addr))
                         {
                             addrDataDict12[addr] = new SensorData();
                         }
 
-                        // Ö»Ìí¼ÓĞÂµÄÊı¾İ£¬±ÜÃâ¶à´ÎÌí¼Ó
+                        // åªæ·»åŠ æ–°çš„æ•°æ®ï¼Œé¿å…å¤šæ¬¡æ·»åŠ 
                         if (addrDataDict12[addr].TemperatureData.Count < 8)
                         {
-                            addrDataDict12[addr].TemperatureData.AddRange(values.Slice(0, 8).ToArray());
+                            addrDataDict12[addr].TemperatureData.AddRange(values.Slice(0, 12).ToArray());
                         }
                     }
-                    // Èç¹ûÊÇÑ¹Á¦Êı¾İ (F5)
+                    // ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (F5)
                     else if (type == 0xF5)
                     {
                         for (int i = 0; i < 12; i++)
                         {
                             if (dataOffset + i * 4 + 3 >= packet.Length) break;
-                            double v = BitConverter.ToInt32(packet, dataOffset + i * 4); // ±£³ÖĞ¡¶Ë»ò°´Ğ­Òé
+                            double v = BitConverter.ToInt32(packet, dataOffset + i * 4); // ï¿½ï¿½ï¿½ï¿½Ğ¡ï¿½Ë»ï¿½Ğ­ï¿½ï¿½
                             if (guiyihua)
                             {
-                                v = v / 1000.0; // Ñ¹Á¦Öµ¹éÒ»»¯£¬µ¥Î» kPa
+                                v = v / 1000.0; // Ñ¹ï¿½ï¿½Öµï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î» kPa
 
-                                // ±£Ö¤×îĞ¡ÖµÎª 1
+                                // ä¿è¯æœ€å°å€¼ä¸º 1
                                 if (v > 0 && v < 1) v = 1;
                                 if (v < 0 && v > -1) v = -1;
                             }
@@ -663,13 +660,13 @@ namespace jiazhua
                             values[11 - i] = v;
                         }
 
-                        // ½«Ñ¹Á¦Êı¾İÌí¼Óµ½×Öµä
+                        // å°†å‹åŠ›æ•°æ®æ·»åŠ åˆ°å­—å…¸
                         if (!addrDataDict12.ContainsKey(addr))
                         {
                             addrDataDict12[addr] = new SensorData();
                         }
 
-                        // Ö»Ìí¼ÓĞÂµÄÊı¾İ£¬±ÜÃâ¶à´ÎÌí¼Ó
+                        // åªæ·»åŠ æ–°çš„æ•°æ®ï¼Œé¿å…å¤šæ¬¡æ·»åŠ 
                         if (addrDataDict12[addr].PressureData.Count < 12)
                         {
                             addrDataDict12[addr].PressureData.AddRange(values.Slice(0, 12).ToArray());
@@ -682,7 +679,7 @@ namespace jiazhua
 
                     lastValidPacket12 = packet;
 
-                    // »ñÈ¡ List<string> ¶ÔÏó³Ø
+                    // è·å– List<string> å¯¹è±¡æ± 
                     var uiData = uiDataPool.Rent();
                     uiData.Clear();
                     uiData.Add("S12");
@@ -693,33 +690,33 @@ namespace jiazhua
                     while (uiQueue.Count > 0) uiQueue.TryTake(out _);
                     uiQueue.Add(uiData);
 
-                    // ¼ì²é¸Ã addr ÊÇ·ñÓĞ×ã¹»µÄÊı¾İ£¨ÎÂ¶ÈºÍÑ¹Á¦Êı¾İ¸÷ 12 ¸ö£©
+                    // æ£€æŸ¥è¯¥ addr æ˜¯å¦æœ‰è¶³å¤Ÿçš„æ•°æ®ï¼ˆæ¸©åº¦å’Œå‹åŠ›æ•°æ®å„ 12 ä¸ªï¼‰
                     if (addrDataDict12[addr].TemperatureData.Count >= 12 && addrDataDict12[addr].PressureData.Count >= 12)
                     {
-                        // µ±Êı¾İÂú×ãÌõ¼şÊ±£¬¼ÓÈë fileRawQueue
+                        // å½“æ•°æ®æ»¡è¶³æ¡ä»¶æ—¶ï¼ŒåŠ å…¥ fileRawQueue
                         var fileData = uiDataPool.Rent();
                         fileData.Clear();
                         fileData.Add("S12");
 
-                        // ½«ÎÂ¶ÈÊı¾İºÍÑ¹Á¦Êı¾İÒ»ÆğÌí¼Óµ½ uiData
+                        // å°†æ¸©åº¦æ•°æ®å’Œå‹åŠ›æ•°æ®ä¸€èµ·æ·»åŠ åˆ° uiData
                         for (int i = 0; i < 12; i++)
                         {
                             double rawV = addrDataDict12[addr].TemperatureData[i];
-                            int channelIndex = (addr - 1) * 12 + i;
+                            int channelIndex = i;
                             double filedV = DenoiseByMedian_temp12(channelIndex, rawV);
                             fileData.Add(filedV.ToString("F2"));
                         }
                         for (int i = 0; i < 12; i++)
                         {
                             double rawV = addrDataDict12[addr].PressureData[i];
-                            int channelIndex = (addr - 1) * 12 + i;
+                            int channelIndex = i;
                             double zeroedV = rawV - channelZeroOffsets12[channelIndex];
                             double filedV = DenoiseByMedian_filedata12(channelIndex, zeroedV);
                             fileData.Add(filedV.ToString("F3"));
                         }
                         if (isSaving)
                         {
-                            // ±£´æÊı¾İµ½ fileRawQueue
+                            // ä¿å­˜æ•°æ®åˆ° fileRawQueue
                             var now = HighResDateTime.Now;
                             if ((now - lastSaveTime).TotalMilliseconds >= saveRate)
                             {
@@ -728,7 +725,7 @@ namespace jiazhua
                                 fileRawQueue.Add(fileData);
                             }
                         }
-                        // Çå³ı¸Ã addr µÄÊı¾İ£¨ÎÂ¶ÈºÍÑ¹Á¦¶¼Çå³ı£©
+                        // æ¸…é™¤è¯¥ addr çš„æ•°æ®ï¼ˆæ¸©åº¦å’Œå‹åŠ›éƒ½æ¸…é™¤ï¼‰
                         addrDataDict12[addr] = new SensorData();
                     }
 
@@ -737,23 +734,23 @@ namespace jiazhua
                     {
                         label_receive.BeginInvoke(new Action(() =>
                         {
-                            label_receive.Text = $"½ÓÊÕ°üÊı: {newCount}";
+                            label_receive.Text = $"ï¿½ï¿½ï¿½Õ°ï¿½ï¿½ï¿½: {newCount}";
                         }));
                     }
                     else
                     {
-                        label_receive.Text = $"½ÓÊÕ°üÊı: {newCount}";
+                        label_receive.Text = $"ï¿½ï¿½ï¿½Õ°ï¿½ï¿½ï¿½: {newCount}";
                     }
                 }
 
                 if (addr == 2)
                 {
-                    // ¸´ÓÃÊı×é
+                    // å¤ç”¨æ•°ç»„
                     Span<double> values = stackalloc double[32];
 
-                    int dataOffset = 37;
+                    int dataOffset = 13;
 
-                    // Èç¹ûÊÇÎÂ¶ÈÊı¾İ (F4)
+                    // å¦‚æœæ˜¯æ¸©åº¦æ•°æ® (F4)
                     if (type == 0xF4)
                     {
                         for (int i = 0; i < 32; i++)
@@ -763,123 +760,133 @@ namespace jiazhua
                             values[31 - i] = v / 10;
                         }
 
-                        // ½«ÎÂ¶ÈÊı¾İÌí¼Óµ½×Öµä
+                        // å°†æ¸©åº¦æ•°æ®æ·»åŠ åˆ°å­—å…¸
                         if (!addrDataDict32.ContainsKey(addr))
                         {
                             addrDataDict32[addr] = new SensorData();
                         }
 
-                        // Ö»Ìí¼ÓĞÂµÄÊı¾İ£¬±ÜÃâ¶à´ÎÌí¼Ó
+                        // åªæ·»åŠ æ–°çš„æ•°æ®ï¼Œé¿å…å¤šæ¬¡æ·»åŠ 
                         if (addrDataDict32[addr].TemperatureData.Count < 32)
                         {
-                            addrDataDict32[addr].TemperatureData.AddRange(values.Slice(0, 32).ToArray());
-                        }
-                    }
-                    // Èç¹ûÊÇÑ¹Á¦Êı¾İ (F5)
-                    else if (type == 0xF5)
-                    {
-                        for (int i = 0; i < 32; i++)
-                        {
-                            if (dataOffset + i * 4 + 3 >= packet.Length) break;
-                            double v = BitConverter.ToInt32(packet, dataOffset + i * 4); // ±£³ÖĞ¡¶Ë»ò°´Ğ­Òé
-                            if (guiyihua)
+                            var tempList = addrDataDict32[addr].TemperatureData;
+                            for (int i = 0; i < 32; i++)
                             {
-                                v = v / 1000.0; // Ñ¹Á¦Öµ¹éÒ»»¯£¬µ¥Î» kPa
-
-                                // ±£Ö¤×îĞ¡ÖµÎª 1
-                                if (v > 0 && v < 1) v = 1;
-                                if (v < 0 && v > -1) v = -1;
+                                tempList.Add(values[i]);
                             }
 
-                            values[31 - i] = v;
+                        }
+                        // å¦‚æœæ˜¯å‹åŠ›æ•°æ® (F5)
+                        else if (type == 0xF5)
+                        {
+                            for (int i = 0; i < 32; i++)
+                            {
+                                if (dataOffset + i * 4 + 3 >= packet.Length) break;
+                                double v = BitConverter.ToInt32(packet, dataOffset + i * 4); // ï¿½ï¿½ï¿½ï¿½Ğ¡ï¿½Ë»ï¿½Ğ­ï¿½ï¿½
+                                if (guiyihua)
+                                {
+                                    v = v / 1000.0; // Ñ¹ï¿½ï¿½Öµï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î» kPa
+
+                                    // ä¿è¯æœ€å°å€¼ä¸º 1
+                                    if (v > 0 && v < 1) v = 1;
+                                    if (v < 0 && v > -1) v = -1;
+                                }
+
+                                values[31 - i] = v;
+                            }
+
+                            // å°†å‹åŠ›æ•°æ®æ·»åŠ åˆ°å­—å…¸
+                            if (!addrDataDict32.ContainsKey(addr))
+                            {
+                                addrDataDict32[addr] = new SensorData();
+                            }
+
+                            // åªæ·»åŠ æ–°çš„æ•°æ®ï¼Œé¿å…å¤šæ¬¡æ·»åŠ 
+                            if (addrDataDict32[addr].PressureData.Count < 32)
+                            {
+                                var presList = addrDataDict32[addr].PressureData;
+                                for (int i = 0; i < 32; i++)
+                                {
+                                    presList.Add(values[i]);
+                                }
+
+                            }
+                        }
+                        else
+                        {
+                            return;
                         }
 
-                        // ½«Ñ¹Á¦Êı¾İÌí¼Óµ½×Öµä
-                        if (!addrDataDict32.ContainsKey(addr))
+                        lastValidPacket32 = packet;
+
+                        // è·å– List<string> å¯¹è±¡æ± 
+                        var uiData = uiDataPool.Rent();
+                        uiData.Clear();
+                        uiData.Add("S32");
+                        uiData.Add(type.ToString("X2"));
+                        for (int i = 0; i < 32; i++)
+                            uiData.Add(values[i].ToString());
+
+                        while (uiQueue.Count > 0) uiQueue.TryTake(out _);
+                        uiQueue.Add(uiData);
+
+                        // æ£€æŸ¥è¯¥ addr æ˜¯å¦æœ‰è¶³å¤Ÿçš„æ•°æ®ï¼ˆæ¸©åº¦å’Œå‹åŠ›æ•°æ®å„ 32 ä¸ªï¼‰
+                        if (addrDataDict32[addr].TemperatureData.Count >= 32 && addrDataDict32[addr].PressureData.Count >= 32)
                         {
+                            // å½“æ•°æ®æ»¡è¶³æ¡ä»¶æ—¶ï¼ŒåŠ å…¥ fileRawQueue
+                            var fileData = uiDataPool.Rent();
+                            fileData.Clear();
+                            fileData.Add("S32");
+
+                            // å°†æ¸©åº¦æ•°æ®å’Œå‹åŠ›æ•°æ®ä¸€èµ·æ·»åŠ åˆ° uiData
+                            for (int i = 0; i < 32; i++)
+                            {
+                                double rawV = addrDataDict32[addr].TemperatureData[i];
+                                int channelIndex = i;
+                                double filedV = DenoiseByMedian_temp32(channelIndex, rawV);
+                                fileData.Add(filedV.ToString("F2"));
+                            }
+                            for (int i = 0; i < 32; i++)
+                            {
+                                double rawV = addrDataDict32[addr].PressureData[i];
+                                int channelIndex = i;
+                                double zeroedV = rawV - channelZeroOffsets32[channelIndex];
+                                double filedV = DenoiseByMedian_filedata32(channelIndex, zeroedV);
+                                fileData.Add(filedV.ToString("F3"));
+                            }
+                            if (isSaving)
+                            {
+                                // ä¿å­˜æ•°æ®åˆ° fileRawQueue
+                                var now = HighResDateTime.Now;
+                                if ((now - lastSaveTime).TotalMilliseconds >= saveRate)
+                                {
+                                    lastSaveTime = now;
+                                    if (fileRawQueue.Count >= 20000) fileRawQueue.TryTake(out _);
+                                    fileRawQueue.Add(fileData);
+                                }
+                            }
+                            // æ¸…é™¤è¯¥ addr çš„æ•°æ®ï¼ˆæ¸©åº¦å’Œå‹åŠ›éƒ½æ¸…é™¤ï¼‰
                             addrDataDict32[addr] = new SensorData();
                         }
 
-                        // Ö»Ìí¼ÓĞÂµÄÊı¾İ£¬±ÜÃâ¶à´ÎÌí¼Ó
-                        if (addrDataDict32[addr].PressureData.Count < 32)
+                        long newCount = Interlocked.Increment(ref totalPacketCount);
+                        if (label_receive.InvokeRequired)
                         {
-                            addrDataDict32[addr].PressureData.AddRange(values.Slice(0, 32).ToArray());
-                        }
-                    }
-                    else
-                    {
-                        return;
-                    }
-
-                    lastValidPacket32 = packet;
-
-                    // »ñÈ¡ List<string> ¶ÔÏó³Ø
-                    var uiData = uiDataPool.Rent();
-                    uiData.Clear();
-                    uiData.Add("S32");
-                    uiData.Add(type.ToString("X2"));
-                    for (int i = 0; i < 32; i++)
-                        uiData.Add(values[i].ToString());
-
-                    while (uiQueue.Count > 0) uiQueue.TryTake(out _);
-                    uiQueue.Add(uiData);
-
-                    // ¼ì²é¸Ã addr ÊÇ·ñÓĞ×ã¹»µÄÊı¾İ£¨ÎÂ¶ÈºÍÑ¹Á¦Êı¾İ¸÷ 32 ¸ö£©
-                    if (addrDataDict32[addr].TemperatureData.Count >= 32 && addrDataDict32[addr].PressureData.Count >= 32)
-                    {
-                        // µ±Êı¾İÂú×ãÌõ¼şÊ±£¬¼ÓÈë fileRawQueue
-                        var fileData = uiDataPool.Rent();
-                        fileData.Clear();
-                        fileData.Add("S32");
-
-                        // ½«ÎÂ¶ÈÊı¾İºÍÑ¹Á¦Êı¾İÒ»ÆğÌí¼Óµ½ uiData
-                        for (int i = 0; i < 32; i++)
-                        {
-                            double rawV = addrDataDict32[addr].TemperatureData[i];
-                            int channelIndex = (addr - 1) * 32 + i;
-                            double filedV = DenoiseByMedian_temp32(channelIndex, rawV);
-                            fileData.Add(filedV.ToString("F2"));
-                        }
-                        for (int i = 0; i < 32; i++)
-                        {
-                            double rawV = addrDataDict32[addr].PressureData[i];
-                            int channelIndex = (addr - 1) * 32 + i;
-                            double zeroedV = rawV - channelZeroOffsets32[channelIndex];
-                            double filedV = DenoiseByMedian_filedata32(channelIndex, zeroedV);
-                            fileData.Add(filedV.ToString("F3"));
-                        }
-                        if (isSaving)
-                        {
-                            // ±£´æÊı¾İµ½ fileRawQueue
-                            var now = HighResDateTime.Now;
-                            if ((now - lastSaveTime).TotalMilliseconds >= saveRate)
+                            label_receive.BeginInvoke(new Action(() =>
                             {
-                                lastSaveTime = now;
-                                if (fileRawQueue.Count >= 20000) fileRawQueue.TryTake(out _);
-                                fileRawQueue.Add(fileData);
-                            }
+                                label_receive.Text = $"æ¥æ”¶åŒ…æ•°: {newCount}";
+                            }));
                         }
-                        // Çå³ı¸Ã addr µÄÊı¾İ£¨ÎÂ¶ÈºÍÑ¹Á¦¶¼Çå³ı£©
-                        addrDataDict32[addr] = new SensorData();
-                    }
-
-                    long newCount = Interlocked.Increment(ref totalPacketCount);
-                    if (label_receive.InvokeRequired)
-                    {
-                        label_receive.BeginInvoke(new Action(() =>
+                        else
                         {
-                            label_receive.Text = $"½ÓÊÕ°üÊı: {newCount}";
-                        }));
-                    }
-                    else
-                    {
-                        label_receive.Text = $"½ÓÊÕ°üÊı: {newCount}";
+                            label_receive.Text = $"æ¥æ”¶åŒ…æ•°: {newCount}";
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("EnqueuePacket Òì³£: " + ex.ToString());
+                MessageBox.Show("EnqueuePacket å¼‚å¸¸: " + ex.ToString());
             }
         }
 
@@ -890,25 +897,25 @@ namespace jiazhua
 
             var buffer = channelBuffers_temp12[channelIndex];
 
-            // Ìí¼ÓĞÂÖµ
+            // æ·»åŠ æ–°å€¼
             buffer.Enqueue(newValue);
             if (buffer.Count > 4)
                 buffer.Dequeue();
 
-            // Êı¾İÁ¿²»×ãÖ±½Ó·µ»Ø
+            // æ•°æ®é‡ä¸è¶³ç›´æ¥è¿”å›
             if (buffer.Count < 3)
                 return newValue;
 
-            // ×ªÊı×éÅÅĞò
+            // è½¬æ•°ç»„æ’åº
             double[] arr = buffer.ToArray();
             double[] sorted = arr.OrderBy(v => v).ToArray();
             double median = sorted[sorted.Length / 2];
 
-            // ¼ÆËãÖĞÎ»¾ø¶ÔÆ«²î (MAD)
+            // è®¡ç®—ä¸­ä½ç»å¯¹åå·® (MAD)
             double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // ¶¯Ì¬ãĞÖµ, ±£Ö¤¼«Ğ¡MADÒ²ÓĞ×îĞ¡ãĞÖµ
+            double threshold = Math.Max(20, 5 * mad); // åŠ¨æ€é˜ˆå€¼, ä¿è¯æå°MADä¹Ÿæœ‰æœ€å°é˜ˆå€¼
 
-            // Èç¹ûĞÂÖµÆ«ÀëÖĞÎ»Êı¹ı´ó£¬ÊÓÎªÒì³££¬ÓÃÖĞÎ»ÊıÌæ´ú
+            // å¦‚æœæ–°å€¼åç¦»ä¸­ä½æ•°è¿‡å¤§ï¼Œè§†ä¸ºå¼‚å¸¸ï¼Œç”¨ä¸­ä½æ•°æ›¿ä»£
             if (Math.Abs(newValue - median) > threshold)
                 newValue = median;
 
@@ -921,25 +928,25 @@ namespace jiazhua
 
             var buffer = channelBuffers_filedata12[channelIndex];
 
-            // Ìí¼ÓĞÂÖµ
+            // æ·»åŠ æ–°å€¼
             buffer.Enqueue(newValue);
             if (buffer.Count > 4)
                 buffer.Dequeue();
 
-            // Êı¾İÁ¿²»×ãÖ±½Ó·µ»Ø
+            // æ•°æ®é‡ä¸è¶³ç›´æ¥è¿”å›
             if (buffer.Count < 3)
                 return newValue;
 
-            // ×ªÊı×éÅÅĞò
+            // è½¬æ•°ç»„æ’åº
             double[] arr = buffer.ToArray();
             double[] sorted = arr.OrderBy(v => v).ToArray();
             double median = sorted[sorted.Length / 2];
 
-            // ¼ÆËãÖĞÎ»¾ø¶ÔÆ«²î (MAD)
+            // è®¡ç®—ä¸­ä½ç»å¯¹åå·® (MAD)
             double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // ¶¯Ì¬ãĞÖµ, ±£Ö¤¼«Ğ¡MADÒ²ÓĞ×îĞ¡ãĞÖµ
+            double threshold = Math.Max(20, 5 * mad); // åŠ¨æ€é˜ˆå€¼, ä¿è¯æå°MADä¹Ÿæœ‰æœ€å°é˜ˆå€¼
 
-            // Èç¹ûĞÂÖµÆ«ÀëÖĞÎ»Êı¹ı´ó£¬ÊÓÎªÒì³££¬ÓÃÖĞÎ»ÊıÌæ´ú
+            // å¦‚æœæ–°å€¼åç¦»ä¸­ä½æ•°è¿‡å¤§ï¼Œè§†ä¸ºå¼‚å¸¸ï¼Œç”¨ä¸­ä½æ•°æ›¿ä»£
             if (Math.Abs(newValue - median) > threshold)
                 newValue = median;
 
@@ -952,25 +959,25 @@ namespace jiazhua
 
             var buffer = channelBuffers_temp32[channelIndex];
 
-            // Ìí¼ÓĞÂÖµ
+            // æ·»åŠ æ–°å€¼
             buffer.Enqueue(newValue);
             if (buffer.Count > 4)
                 buffer.Dequeue();
 
-            // Êı¾İÁ¿²»×ãÖ±½Ó·µ»Ø
+            // æ•°æ®é‡ä¸è¶³ç›´æ¥è¿”å›
             if (buffer.Count < 3)
                 return newValue;
 
-            // ×ªÊı×éÅÅĞò
+            // è½¬æ•°ç»„æ’åº
             double[] arr = buffer.ToArray();
             double[] sorted = arr.OrderBy(v => v).ToArray();
             double median = sorted[sorted.Length / 2];
 
-            // ¼ÆËãÖĞÎ»¾ø¶ÔÆ«²î (MAD)
+            // è®¡ç®—ä¸­ä½ç»å¯¹åå·® (MAD)
             double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // ¶¯Ì¬ãĞÖµ, ±£Ö¤¼«Ğ¡MADÒ²ÓĞ×îĞ¡ãĞÖµ
+            double threshold = Math.Max(20, 5 * mad); // åŠ¨æ€é˜ˆå€¼, ä¿è¯æå°MADä¹Ÿæœ‰æœ€å°é˜ˆå€¼
 
-            // Èç¹ûĞÂÖµÆ«ÀëÖĞÎ»Êı¹ı´ó£¬ÊÓÎªÒì³££¬ÓÃÖĞÎ»ÊıÌæ´ú
+            // å¦‚æœæ–°å€¼åç¦»ä¸­ä½æ•°è¿‡å¤§ï¼Œè§†ä¸ºå¼‚å¸¸ï¼Œç”¨ä¸­ä½æ•°æ›¿ä»£
             if (Math.Abs(newValue - median) > threshold)
                 newValue = median;
 
@@ -983,25 +990,25 @@ namespace jiazhua
 
             var buffer = channelBuffers_filedata32[channelIndex];
 
-            // Ìí¼ÓĞÂÖµ
+            // æ·»åŠ æ–°å€¼
             buffer.Enqueue(newValue);
             if (buffer.Count > 4)
                 buffer.Dequeue();
 
-            // Êı¾İÁ¿²»×ãÖ±½Ó·µ»Ø
+            // æ•°æ®é‡ä¸è¶³ç›´æ¥è¿”å›
             if (buffer.Count < 3)
                 return newValue;
 
-            // ×ªÊı×éÅÅĞò
+            // è½¬æ•°ç»„æ’åº
             double[] arr = buffer.ToArray();
             double[] sorted = arr.OrderBy(v => v).ToArray();
             double median = sorted[sorted.Length / 2];
 
-            // ¼ÆËãÖĞÎ»¾ø¶ÔÆ«²î (MAD)
+            // è®¡ç®—ä¸­ä½ç»å¯¹åå·® (MAD)
             double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // ¶¯Ì¬ãĞÖµ, ±£Ö¤¼«Ğ¡MADÒ²ÓĞ×îĞ¡ãĞÖµ
+            double threshold = Math.Max(20, 5 * mad); // åŠ¨æ€é˜ˆå€¼, ä¿è¯æå°MADä¹Ÿæœ‰æœ€å°é˜ˆå€¼
 
-            // Èç¹ûĞÂÖµÆ«ÀëÖĞÎ»Êı¹ı´ó£¬ÊÓÎªÒì³££¬ÓÃÖĞÎ»ÊıÌæ´ú
+            // å¦‚æœæ–°å€¼åç¦»ä¸­ä½æ•°è¿‡å¤§ï¼Œè§†ä¸ºå¼‚å¸¸ï¼Œç”¨ä¸­ä½æ•°æ›¿ä»£
             if (Math.Abs(newValue - median) > threshold)
                 newValue = median;
 
@@ -1009,11 +1016,11 @@ namespace jiazhua
         }
         #endregion
 
-        #region ½âÎöÏß³Ì
+        #region è§£æçº¿ç¨‹
         private bool yalitu = false;
-        private bool wendutu = false;
+        //private bool wendutu = true;
         private bool diantu = false;
-        private bool yuntu = false;
+        //private bool yuntu = true;
         int packetIndex12 = 0;
         int packetIndex32 = 0;
         private bool isZeroing = false;
@@ -1026,11 +1033,11 @@ namespace jiazhua
         private DotMatrixUpdate dotUpdate32 = new DotMatrixUpdate();
         public class GraphUpdate
         {
-            public int SensorIndex { get; set; }     // ´«¸ĞÆ÷±àºÅ
-            public int Channel { get; set; }         // Ñ¹Á¦Í¨µÀ±àºÅ
-            public long Index { get; set; }          // °üĞòºÅ
-            public double Pressure { get; set; }     // µ±Ç°Ñ¹Á¦Öµ
-            public double Temperature { get; set; }  // µ±Ç°ÎÂ¶ÈÖµ
+            public int SensorIndex { get; set; }     // ä¼ æ„Ÿå™¨ç¼–å·
+            public int Channel { get; set; }         // å‹åŠ›é€šé“ç¼–å·
+            public long Index { get; set; }          // åŒ…åºå·
+            public double Pressure { get; set; }     // å½“å‰å‹åŠ›å€¼
+            public double Temperature { get; set; }  // å½“å‰æ¸©åº¦å€¼
         }
         class DotMatrixUpdate
         {
@@ -1038,10 +1045,11 @@ namespace jiazhua
             public double[] PressureValues;
             public double[] TempValues;
         }
-        // ´æ´¢½âÎöºóµÄÇúÏß¸üĞÂÊı¾İ
+        // å­˜å‚¨è§£æåçš„æ›²çº¿æ›´æ–°æ•°æ®
         private ConcurrentQueue<GraphUpdate> graphQueue = new ConcurrentQueue<GraphUpdate>();
         private ConcurrentQueue<GraphUpdate> tempQueue = new ConcurrentQueue<GraphUpdate>();
-        private ConcurrentQueue<DotMatrixUpdate> dotQueue = new ConcurrentQueue<DotMatrixUpdate>();
+        private ConcurrentQueue<DotMatrixUpdate> dotQueue_Pres = new ConcurrentQueue<DotMatrixUpdate>();
+        private ConcurrentQueue<DotMatrixUpdate> dotQueue_Temp = new ConcurrentQueue<DotMatrixUpdate>();
 
         private void StartPacketProcessingThread()
         {
@@ -1061,6 +1069,9 @@ namespace jiazhua
                 if (uiData[0] == "S12")
                 {
                     dotUpdate12.SensorIndex = 12;
+                    dotUpdate12.PressureValues = new double[12];
+                    dotUpdate12.TempValues = new double[12];
+
                     string type = uiData[1];
 
                     if (isZeroing && type == "F5")
@@ -1077,11 +1088,11 @@ namespace jiazhua
                             {
                                 pressureCalibBuffers12[channelIndex].Add(pressure);
                                 channelZeroingCounts12[channelIndex]++;
-                                activeChannels12[channelIndex] = true; // ±ê¼Ç¸ÃÍ¨µÀÓĞĞ§
+                                activeChannels12[channelIndex] = true; // ï¿½ï¿½Ç¸ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ğ§
                             }
                         }
 
-                        // ÅĞ¶ÏÒÑ¼¤»îµÄÍ¨µÀÊÇ·ñ¶¼²ÉÂú
+                        // åˆ¤æ–­å·²æ¿€æ´»çš„é€šé“æ˜¯å¦éƒ½é‡‡æ»¡
                         bool allActiveDone = true;
                         for (int ch = 0; ch < 12; ch++)
                         {
@@ -1094,7 +1105,7 @@ namespace jiazhua
 
                         if (allActiveDone)
                         {
-                            // ¼ÆËãÁãµãÆ«ÒÆ
+                            // è®¡ç®—é›¶ç‚¹åç§»
                             for (int ch = 0; ch < 12; ch++)
                             {
                                 if (activeChannels12[ch] &&
@@ -1105,41 +1116,41 @@ namespace jiazhua
                                 }
                             }
 
-                            // Ğ£ÁãÍê³É
+                            // æ ¡é›¶å®Œæˆ
                             isZeroing = false;
                             isSaving = true;
                             Array.Clear(channelZeroingCounts12, 0, channelZeroingCounts12.Length);
-                            Array.Clear(activeChannels12, 0, activeChannels12.Length); // ÇåÀí¼¤»î×´Ì¬
+                            Array.Clear(activeChannels12, 0, activeChannels12.Length); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬
 
-                            Action showMsg = () => MessageBox.Show("Ğ£ÁãÍê³É", "ÌáÊ¾", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            Action showMsg = () => MessageBox.Show("æ ¡é›¶å®Œæˆ", "æç¤º", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                     }
 
-                    // === ½âÎöÖµ²¢Ìî³ä¶ÔÏó ===
+                    // === è§£æå€¼å¹¶å¡«å……å¯¹è±¡ ===
                     for (int i = 0; i < 12; i++)
                     {
                         int channelIndex = i;
                         if (!double.TryParse(uiData[2 + i], out double value)) continue;
 
-                        if (type == "F4") // ÎÂ¶È
+                        if (type == "F4") // æ¸©åº¦
                         {
                             //dotUpdate_Temp.TempValues[channelIndex] = Math.Round(value / 1000.0, 1);
                             dotUpdate12.TempValues[channelIndex] = value;
-                            if (wendutu)
-                            {
-                                var graphUpdate = new GraphUpdate
-                                {
-                                    SensorIndex = 12,
-                                    Channel = channelIndex,
-                                    Index = packetIndex12,
-                                    Temperature = dotUpdate12.TempValues[channelIndex]
-                                };
+                            /*                            if (wendutu)
+                                                        {
+                                                            var graphUpdate = new GraphUpdate
+                                                            {
+                                                                SensorIndex = 12,
+                                                                Channel = channelIndex,
+                                                                Index = packetIndex12,
+                                                                Temperature = dotUpdate12.TempValues[channelIndex]
+                                                            };
 
-                                if (tempQueue.Count >= MaxQueueSize) tempQueue.TryDequeue(out _);
-                                tempQueue.Enqueue(graphUpdate);
-                            }
+                                                            if (tempQueue.Count >= MaxQueueSize) tempQueue.TryDequeue(out _);
+                                                            tempQueue.Enqueue(graphUpdate);
+                                                        }*/
                         }
-                        else if (type == "F5") // Ñ¹Á¦
+                        else if (type == "F5") // å‹åŠ›
                         {
                             double correctedPressure = value - channelZeroOffsets12[channelIndex];
                             double pressureDenoised = DenoiseByMedian12(channelIndex, correctedPressure);
@@ -1163,7 +1174,7 @@ namespace jiazhua
                         }
                     }
 
-                    // === Èë¶Ó UI ÏÔÊ¾Ç°¼ì²éÊÇ·ñÈ« 0 ===
+                    // === å…¥é˜Ÿ UI æ˜¾ç¤ºå‰æ£€æŸ¥æ˜¯å¦å…¨ 0 ===
                     bool HasNonZero(double[] arr)
                     {
                         foreach (var v in arr)
@@ -1173,10 +1184,15 @@ namespace jiazhua
 
                     if (diantu)
                     {
-                        if (HasNonZero(dotUpdate12.PressureValues) && HasNonZero(dotUpdate12.TempValues))
+                        if (HasNonZero(dotUpdate12.TempValues))
                         {
-                            if (dotQueue.Count >= MaxQueueSize) dotQueue.TryDequeue(out _);
-                            dotQueue.Enqueue(dotUpdate12);
+                            if (dotQueue_Temp.Count >= MaxQueueSize) dotQueue_Temp.TryDequeue(out _);
+                            dotQueue_Temp.Enqueue(dotUpdate12);
+                        }
+                        if (HasNonZero(dotUpdate12.PressureValues))
+                        {
+                            if (dotQueue_Pres.Count >= MaxQueueSize) dotQueue_Pres.TryDequeue(out _);
+                            dotQueue_Pres.Enqueue(dotUpdate12);
                         }
                     }
 
@@ -1185,12 +1201,13 @@ namespace jiazhua
                 else if (uiData[0] == "S32")
                 {
                     dotUpdate32.SensorIndex = 32;
-
+                    dotUpdate32.PressureValues = new double[32];
+                    dotUpdate32.TempValues = new double[32];
                     string type = uiData[1];
 
                     if (isZeroing && type == "F5")
                     {
-                        for (int i = 0; i < 8; i++)
+                        for (int i = 0; i < 32; i++)
                         {
                             int channelIndex = i;
                             if (channelIndex < 0 || channelIndex >= 32) continue;
@@ -1202,11 +1219,11 @@ namespace jiazhua
                             {
                                 pressureCalibBuffers32[channelIndex].Add(pressure);
                                 channelZeroingCounts32[channelIndex]++;
-                                activeChannels32[channelIndex] = true; // ±ê¼Ç¸ÃÍ¨µÀÓĞĞ§
+                                activeChannels32[channelIndex] = true; // ï¿½ï¿½Ç¸ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ğ§
                             }
                         }
 
-                        // ÅĞ¶ÏÒÑ¼¤»îµÄÍ¨µÀÊÇ·ñ¶¼²ÉÂú
+                        // åˆ¤æ–­å·²æ¿€æ´»çš„é€šé“æ˜¯å¦éƒ½é‡‡æ»¡
                         bool allActiveDone = true;
                         for (int ch = 0; ch < 32; ch++)
                         {
@@ -1219,7 +1236,7 @@ namespace jiazhua
 
                         if (allActiveDone)
                         {
-                            // ¼ÆËãÁãµãÆ«ÒÆ
+                            // è®¡ç®—é›¶ç‚¹åç§»
                             for (int ch = 0; ch < 32; ch++)
                             {
                                 if (activeChannels32[ch] &&
@@ -1230,41 +1247,41 @@ namespace jiazhua
                                 }
                             }
 
-                            // Ğ£ÁãÍê³É
+                            // æ ¡é›¶å®Œæˆ
                             isZeroing = false;
                             isSaving = true;
                             Array.Clear(channelZeroingCounts32, 0, channelZeroingCounts32.Length);
-                            Array.Clear(activeChannels32, 0, activeChannels32.Length); // ÇåÀí¼¤»î×´Ì¬
+                            Array.Clear(activeChannels32, 0, activeChannels32.Length); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬
 
-                            Action showMsg = () => MessageBox.Show("Ğ£ÁãÍê³É", "ÌáÊ¾", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            Action showMsg = () => MessageBox.Show("æ ¡é›¶å®Œæˆ", "æç¤º", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                     }
 
-                    // === ½âÎöÖµ²¢Ìî³ä¶ÔÏó ===
+                    // === è§£æå€¼å¹¶å¡«å……å¯¹è±¡ ===
                     for (int i = 0; i < 32; i++)
                     {
                         int channelIndex = i;
                         if (!double.TryParse(uiData[2 + i], out double value)) continue;
 
-                        if (type == "F4") // ÎÂ¶È
+                        if (type == "F4") // æ¸©åº¦
                         {
                             //dotUpdate_Temp.TempValues[channelIndex] = Math.Round(value / 1000.0, 1);
                             dotUpdate32.TempValues[channelIndex] = value;
-                            if (wendutu)
-                            {
-                                var graphUpdate = new GraphUpdate
-                                {
-                                    SensorIndex = 32,
-                                    Channel = channelIndex,
-                                    Index = packetIndex32,
-                                    Temperature = dotUpdate32.TempValues[channelIndex]
-                                };
+                            /*                            if (wendutu)
+                                                        {
+                                                            var graphUpdate = new GraphUpdate
+                                                            {
+                                                                SensorIndex = 32,
+                                                                Channel = channelIndex,
+                                                                Index = packetIndex32,
+                                                                Temperature = dotUpdate32.TempValues[channelIndex]
+                                                            };
 
-                                if (tempQueue.Count >= MaxQueueSize) tempQueue.TryDequeue(out _);
-                                tempQueue.Enqueue(graphUpdate);
-                            }
+                                                            if (tempQueue.Count >= MaxQueueSize) tempQueue.TryDequeue(out _);
+                                                            tempQueue.Enqueue(graphUpdate);
+                                                        }*/
                         }
-                        else if (type == "F5") // Ñ¹Á¦
+                        else if (type == "F5") // å‹åŠ›
                         {
                             double correctedPressure = value - channelZeroOffsets32[channelIndex];
                             double pressureDenoised = DenoiseByMedian32(channelIndex, correctedPressure);
@@ -1288,7 +1305,7 @@ namespace jiazhua
                         }
                     }
 
-                    // === Èë¶Ó UI ÏÔÊ¾Ç°¼ì²éÊÇ·ñÈ« 0 ===
+                    // === å…¥é˜Ÿ UI æ˜¾ç¤ºå‰æ£€æŸ¥æ˜¯å¦å…¨ 0 ===
                     bool HasNonZero(double[] arr)
                     {
                         foreach (var v in arr)
@@ -1298,10 +1315,15 @@ namespace jiazhua
 
                     if (diantu)
                     {
-                        if (HasNonZero(dotUpdate32.PressureValues) && HasNonZero(dotUpdate32.TempValues))
+                        if (HasNonZero(dotUpdate32.TempValues))
                         {
-                            if (dotQueue.Count >= MaxQueueSize) dotQueue.TryDequeue(out _);
-                            dotQueue.Enqueue(dotUpdate32);
+                            if (dotQueue_Temp.Count >= MaxQueueSize) dotQueue_Temp.TryDequeue(out _);
+                            dotQueue_Temp.Enqueue(dotUpdate32);
+                        }
+                        if (HasNonZero(dotUpdate32.PressureValues))
+                        {
+                            if (dotQueue_Pres.Count >= MaxQueueSize) dotQueue_Pres.TryDequeue(out _);
+                            dotQueue_Pres.Enqueue(dotUpdate32);
                         }
                     }
 
@@ -1321,25 +1343,25 @@ namespace jiazhua
 
             var buffer = channelBuffers12[channelIndex];
 
-            // Ìí¼ÓĞÂÖµ
+            // æ·»åŠ æ–°å€¼
             buffer.Enqueue(newValue);
             if (buffer.Count > 4)
                 buffer.Dequeue();
 
-            // Êı¾İÁ¿²»×ãÖ±½Ó·µ»Ø
+            // æ•°æ®é‡ä¸è¶³ç›´æ¥è¿”å›
             if (buffer.Count < 3)
                 return newValue;
 
-            // ×ªÊı×éÅÅĞò
+            // è½¬æ•°ç»„æ’åº
             double[] arr = buffer.ToArray();
             double[] sorted = arr.OrderBy(v => v).ToArray();
             double median = sorted[sorted.Length / 2];
 
-            // ¼ÆËãÖĞÎ»¾ø¶ÔÆ«²î (MAD)
+            // è®¡ç®—ä¸­ä½ç»å¯¹åå·® (MAD)
             double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // ¶¯Ì¬ãĞÖµ, ±£Ö¤¼«Ğ¡MADÒ²ÓĞ×îĞ¡ãĞÖµ
+            double threshold = Math.Max(20, 5 * mad); // åŠ¨æ€é˜ˆå€¼, ä¿è¯æå°MADä¹Ÿæœ‰æœ€å°é˜ˆå€¼
 
-            // Èç¹ûĞÂÖµÆ«ÀëÖĞÎ»Êı¹ı´ó£¬ÊÓÎªÒì³££¬ÓÃÖĞÎ»ÊıÌæ´ú
+            // å¦‚æœæ–°å€¼åç¦»ä¸­ä½æ•°è¿‡å¤§ï¼Œè§†ä¸ºå¼‚å¸¸ï¼Œç”¨ä¸­ä½æ•°æ›¿ä»£
             if (Math.Abs(newValue - median) > threshold)
                 newValue = median;
 
@@ -1352,25 +1374,25 @@ namespace jiazhua
 
             var buffer = channelBuffers32[channelIndex];
 
-            // Ìí¼ÓĞÂÖµ
+            // æ·»åŠ æ–°å€¼
             buffer.Enqueue(newValue);
             if (buffer.Count > 4)
                 buffer.Dequeue();
 
-            // Êı¾İÁ¿²»×ãÖ±½Ó·µ»Ø
+            // æ•°æ®é‡ä¸è¶³ç›´æ¥è¿”å›
             if (buffer.Count < 3)
                 return newValue;
 
-            // ×ªÊı×éÅÅĞò
+            // è½¬æ•°ç»„æ’åº
             double[] arr = buffer.ToArray();
             double[] sorted = arr.OrderBy(v => v).ToArray();
             double median = sorted[sorted.Length / 2];
 
-            // ¼ÆËãÖĞÎ»¾ø¶ÔÆ«²î (MAD)
+            // è®¡ç®—ä¸­ä½ç»å¯¹åå·® (MAD)
             double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // ¶¯Ì¬ãĞÖµ, ±£Ö¤¼«Ğ¡MADÒ²ÓĞ×îĞ¡ãĞÖµ
+            double threshold = Math.Max(20, 5 * mad); // åŠ¨æ€é˜ˆå€¼, ä¿è¯æå°MADä¹Ÿæœ‰æœ€å°é˜ˆå€¼
 
-            // Èç¹ûĞÂÖµÆ«ÀëÖĞÎ»Êı¹ı´ó£¬ÊÓÎªÒì³££¬ÓÃÖĞÎ»ÊıÌæ´ú
+            // å¦‚æœæ–°å€¼åç¦»ä¸­ä½æ•°è¿‡å¤§ï¼Œè§†ä¸ºå¼‚å¸¸ï¼Œç”¨ä¸­ä½æ•°æ›¿ä»£
             if (Math.Abs(newValue - median) > threshold)
                 newValue = median;
 
@@ -1378,15 +1400,16 @@ namespace jiazhua
         }
         #endregion
 
-        #region »æÖÆÏß³Ì
+        #region ç»˜åˆ¶çº¿ç¨‹
+        private bool _autoScrollX = true;
         private const int Sensor12ChannelCount = 12;
         private const int Sensor32ChannelCount = 32;
-        // Í³Ò»ÉèÖÃ»æÖÆµãÊıµÄ´°¿Ú´óĞ¡
+        // ç»Ÿä¸€è®¾ç½®ç»˜åˆ¶ç‚¹æ•°çš„çª—å£å¤§å°
         private const int PlotWindowSize = 300;
-        // Ê¹ÓÃ 1000 ×÷Îª Key µÄ³ËÊı£¬È·±£ SensorIndex ²»»á³åÍ»£¨12000 vs 32000£©
+        // ä½¿ç”¨ 1000 ä½œä¸º Key çš„ä¹˜æ•°ï¼Œç¡®ä¿ SensorIndex ä¸ä¼šå†²çªï¼ˆ12000 vs 32000ï¼‰
         private const int KeyMultiplier = 1000;
 
-        private Dictionary<int, (List<double> Xs, List<double> Ys, ScottPlot.Plottables.Scatter Plotable)> _dataDictionary = new();
+        private Dictionary<int, (CircularBuffer Buffer, List<double> Xs, List<double> Ys, ScottPlot.Plottables.Scatter Plotable)> _dataDictionary = new();
         private readonly System.Windows.Forms.Timer _plotTimer = new();
 
         private void InitializePlots()
@@ -1400,15 +1423,16 @@ namespace jiazhua
             plot1.Legend.IsVisible = true;
             plot1.Legend.Location = ScottPlot.Alignment.LowerRight;
 
-            // ³õÊ¼»¯Ã¿¸öÍ¨µÀµÄÊı¾İ½á¹¹ (Sensor 12 ÓĞ 12 ¸öÍ¨µÀ)
+            // åˆå§‹åŒ–æ¯ä¸ªé€šé“çš„æ•°æ®ç»“æ„ (Sensor 12 æœ‰ 12 ä¸ªé€šé“)
             for (int ch = 0; ch < 12; ch++)
             {
                 int key = 12 * KeyMultiplier + ch;
-                var xs = new List<double>();
-                var ys = new List<double>();
+                var buffer = new CircularBuffer(PlotWindowSize);
+                var xs = new List<double>(PlotWindowSize);
+                var ys = new List<double>(PlotWindowSize);
                 var plotable = formsPlot1.Plot.Add.Scatter(xs, ys);
                 plotable.Label = $"CH{ch}";
-                _dataDictionary.Add(key, (xs, ys, plotable));
+                _dataDictionary.Add(key, (buffer, xs, ys, plotable));
             }
 
             // --- formsPlot2 (Sensor 32) ---
@@ -1420,25 +1444,41 @@ namespace jiazhua
             plot2.Legend.IsVisible = true;
             plot2.Legend.Location = ScottPlot.Alignment.LowerRight;
 
-            // ³õÊ¼»¯Ã¿¸öÍ¨µÀµÄÊı¾İ½á¹¹ (Sensor 32 ¼ÙÉèÓĞ 32 ¸öÍ¨µÀ)
+            // åˆå§‹åŒ–æ¯ä¸ªé€šé“çš„æ•°æ®ç»“æ„ (Sensor 32 å‡è®¾æœ‰ 32 ä¸ªé€šé“)
             for (int ch = 0; ch < 32; ch++)
             {
                 int key = 32 * KeyMultiplier + ch;
-                var xs = new List<double>();
-                var ys = new List<double>();
+                var buffer = new CircularBuffer(PlotWindowSize);
+                var xs = new List<double>(PlotWindowSize);
+                var ys = new List<double>(PlotWindowSize);
                 var plotable = formsPlot2.Plot.Add.Scatter(xs, ys);
                 plotable.Label = $"CH{ch}";
-                _dataDictionary.Add(key, (xs, ys, plotable));
+                _dataDictionary.Add(key, (buffer, xs, ys, plotable));
             }
 
-            // Ê×´ÎäÖÈ¾
+            // é¦–æ¬¡æ¸²æŸ“
+            HookUserInteraction(formsPlot1);
+            HookUserInteraction(formsPlot2);
             formsPlot1.Refresh();
             formsPlot2.Refresh();
+        }
+        private void HookUserInteraction(ScottPlot.WinForms.FormsPlot fp)
+        {
+            fp.MouseWheel += (s, e) =>
+            {
+                _autoScrollX = false;
+            };
+
+            fp.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                    _autoScrollX = false;
+            };
         }
 
         private void InitializePlotTimer()
         {
-            // ÉèÖÃ¶¨Ê±Æ÷£¬ÀıÈçÃ¿ 50 ºÁÃë£¨20Hz£©¸üĞÂÒ»´ÎÍ¼±í
+            // è®¾ç½®å®šæ—¶å™¨ï¼Œä¾‹å¦‚æ¯ 50 æ¯«ç§’ï¼ˆ20Hzï¼‰æ›´æ–°ä¸€æ¬¡å›¾è¡¨
             _plotTimer.Interval = 50;
             _plotTimer.Tick += PlotTimer_Tick;
             _plotTimer.Start();
@@ -1446,88 +1486,96 @@ namespace jiazhua
 
         private void PlotTimer_Tick(object? sender, EventArgs e)
         {
-            /*            doubleBufferedPanelCloud12.Values = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-                        doubleBufferedPanelCloud12.Invalidate();
-                        doubleBufferedPanelCloud32.Values = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-                        doubleBufferedPanelCloud32.ValuesTemp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-                        doubleBufferedPanelCloud32.Invalidate();*/
 
-            // ¼ì²éÊÇ·ñÓĞÊı¾İĞèÒª´¦Àí
-            if (graphQueue.IsEmpty)
-            {
-                return; // ¶ÓÁĞÎª¿Õ£¬ÍË³ö
-            }
-
-            // ÓÃÓÚ¼ÇÂ¼ÄÄĞ©Í¼±íĞèÒªË¢ĞÂ
+            // ç”¨äºè®°å½•å“ªäº›å›¾è¡¨éœ€è¦åˆ·æ–°
             bool refreshPlot1 = false;
             bool refreshPlot2 = false;
 
-            // ÅúÁ¿ÌáÈ¡¶ÓÁĞÖĞµÄËùÓĞÊı¾İ
+            // æ‰¹é‡æå–é˜Ÿåˆ—ä¸­çš„æ‰€æœ‰æ•°æ®
             while (graphQueue.TryDequeue(out var update))
             {
                 int key = update.SensorIndex * KeyMultiplier + update.Channel;
 
                 if (_dataDictionary.TryGetValue(key, out var data))
                 {
-                    // 1. ×·¼ÓÊı¾İµ½»º³åÇø (data.Xs, data.Ys ·ÃÎÊÕıÈ·)
-                    data.Xs.Add((double)update.Index);
-                    data.Ys.Add(update.Pressure);
+                    // 1. è¿½åŠ æ•°æ®åˆ°ç¼“å†²åŒº (data.Xs, data.Ys è®¿é—®æ­£ç¡®)
+                    data.Buffer.Add(update.Index, update.Pressure);
 
-                    // 2. Î¬³ÖÊı¾İ´°¿Ú´óĞ¡£¨¹ö¶¯ÏÔÊ¾£©
-                    if (data.Xs.Count > PlotWindowSize)
-                    {
-                        data.Xs.RemoveAt(0);
-                        data.Ys.RemoveAt(0);
-                    }
-
-                    // 3. ±ê¼ÇĞèÒªË¢ĞÂµÄÍ¼±í
+                    // 2. ç»´æŒæ•°æ®çª—å£å¤§å°ï¼ˆæ»šåŠ¨æ˜¾ç¤ºï¼‰
                     if (update.SensorIndex == 12) refreshPlot1 = true;
                     else if (update.SensorIndex == 32) refreshPlot2 = true;
                 }
             }
 
-            // 4. ¸üĞÂ ScottPlot ¿Ø¼ş (¸ßĞÔÄÜ×·¼Ó)
-            // Ö»ĞèÒªÔÚÊı¾İ¸üĞÂºóµ÷ÓÃ Refresh()£¬ScottPlot »á×Ô¶¯ÖØ»æ¡£
+            // 4. æ›´æ–° ScottPlot æ§ä»¶ (é«˜æ€§èƒ½è¿½åŠ )
+            // åªéœ€è¦åœ¨æ•°æ®æ›´æ–°åè°ƒç”¨ Refresh()ï¼ŒScottPlot ä¼šè‡ªåŠ¨é‡ç»˜ã€‚
             if (refreshPlot1)
             {
+                foreach (var d in _dataDictionary.Where(d => d.Key / KeyMultiplier == 12))
+                {
+                    d.Value.Buffer.CopyTo(d.Value.Xs, d.Value.Ys);
+                }
+
                 var plt1 = formsPlot1.Plot;
 
-                // 1. ¼ÆËã×îĞÂµÄ X Öá±ß½ç
-                // ×¢Òâ£ºÕâÀïÎÒÃÇÊ¹ÓÃ .Value.Xs.LastOrDefault(0) ·ÃÎÊÊı¾İ£¬ÕâÊÇÕıÈ·µÄ¡£
+                // 1. è®¡ç®—æœ€æ–°çš„ X è½´è¾¹ç•Œ
+                // æ³¨æ„ï¼šè¿™é‡Œæˆ‘ä»¬ä½¿ç”¨ .Value.Xs.LastOrDefault(0) è®¿é—®æ•°æ®ï¼Œè¿™æ˜¯æ­£ç¡®çš„ã€‚
                 var latestX = _dataDictionary
                             .Where(d => d.Key / KeyMultiplier == 12)
                             .Max(d => d.Value.Xs.LastOrDefault(0));
 
-                plt1.Axes.SetLimitsX(latestX - PlotWindowSize, latestX);
-                plt1.Axes.AutoScaleY();
+                if (_autoScrollX)
+                {
+                    plt1.Axes.SetLimitsX(Math.Max(latestX - PlotWindowSize, 0), latestX);
+                    plt1.Axes.AutoScaleY();
+                }
 
                 formsPlot1.Refresh();
             }
 
             if (refreshPlot2)
             {
+                foreach (var d in _dataDictionary.Where(d => d.Key / KeyMultiplier == 32))
+                {
+                    d.Value.Buffer.CopyTo(d.Value.Xs, d.Value.Ys);
+                }
+
                 var plt2 = formsPlot2.Plot;
                 var latestX = _dataDictionary
                             .Where(d => d.Key / KeyMultiplier == 32)
                             .Max(d => d.Value.Xs.LastOrDefault(0));
 
-                plt2.Axes.SetLimitsX(latestX - PlotWindowSize, latestX);
-                plt2.Axes.AutoScaleY();
+                if (_autoScrollX)
+                {
+                    plt2.Axes.SetLimitsX(Math.Max(latestX - PlotWindowSize, 0), latestX);
+                    plt2.Axes.AutoScaleY();
+                }
 
                 formsPlot2.Refresh();
             }
 
-            while (dotQueue.TryDequeue(out var update))
+            while (dotQueue_Pres.TryDequeue(out var update))
             {
                 if (update.SensorIndex == 12)
                 {
                     doubleBufferedPanelCloud12.Values = update.PressureValues;
-                    doubleBufferedPanelCloud12.ValuesTemp = update.TempValues;
                     doubleBufferedPanelCloud12.Invalidate();
                 }
                 else if (update.SensorIndex == 32)
                 {
                     doubleBufferedPanelCloud32.Values = update.PressureValues;
+                    doubleBufferedPanelCloud32.Invalidate();
+                }
+            }
+            while (dotQueue_Temp.TryDequeue(out var update))
+            {
+                if (update.SensorIndex == 12)
+                {
+                    doubleBufferedPanelCloud12.ValuesTemp = update.TempValues;
+                    doubleBufferedPanelCloud12.Invalidate();
+                }
+                else if (update.SensorIndex == 32)
+                {
                     doubleBufferedPanelCloud32.ValuesTemp = update.TempValues;
                     doubleBufferedPanelCloud32.Invalidate();
                 }
@@ -1535,54 +1583,143 @@ namespace jiazhua
         }
 
         /// <summary>
-        /// ¸ù¾İÓÃ»§Ñ¡ÔñµÄÍ¨µÀÖØĞÂ»æÖÆÍ¼±í¡£
+        /// æ ¹æ®ç”¨æˆ·é€‰æ‹©çš„é€šé“é‡æ–°ç»˜åˆ¶å›¾è¡¨ã€‚
         /// </summary>
         private void RedrawSelectedChannels(FormsPlot formsPlot, List<string> selectedChannels, int sensorIndex)
         {
             var plot = formsPlot.Plot;
 
-            // 1. Çå¿Õµ±Ç°Í¼±íÉÏµÄËùÓĞÄÚÈİ£¨¾ÉÇúÏß¡¢±êÌâ¡¢Öá±êÇ©µÈ»á±£Áô£©
-            // ÎªÁË¸ü³¹µ×µÄ³õÊ¼»¯£¬ÎÒÃÇ¿ÉÒÔÊ¹ÓÃ Clear()£¬µ«ĞèÒªÖØĞÂÉèÖÃ±êÌâºÍÖá¡£
-            // Èç¹ûÖ»ÏëÇå³ıÇúÏß£¬¿ÉÒÔÊ¹ÓÃ RemoveAll();
+            // 1. æ¸…ç©ºå½“å‰å›¾è¡¨ä¸Šçš„æ‰€æœ‰å†…å®¹ï¼ˆæ—§æ›²çº¿ã€æ ‡é¢˜ã€è½´æ ‡ç­¾ç­‰ä¼šä¿ç•™ï¼‰
+            // ä¸ºäº†æ›´å½»åº•çš„åˆå§‹åŒ–ï¼Œæˆ‘ä»¬å¯ä»¥ä½¿ç”¨ Clear()ï¼Œä½†éœ€è¦é‡æ–°è®¾ç½®æ ‡é¢˜å’Œè½´ã€‚
+            // å¦‚æœåªæƒ³æ¸…é™¤æ›²çº¿ï¼Œå¯ä»¥ä½¿ç”¨ RemoveAll();
             plot.Clear();
-            // ÖØĞÂÉèÖÃ ScottPlot 5 Öá±êÇ©ºÍ±êÌâ£¨·ÀÖ¹ Clear() Çå³ı£©
+            // é‡æ–°è®¾ç½® ScottPlot 5 è½´æ ‡ç­¾å’Œæ ‡é¢˜ï¼ˆé˜²æ­¢ Clear() æ¸…é™¤ï¼‰
             plot.Title($"Sensor{sensorIndex}");
             plot.Axes.Bottom.Label.Text = "Packet Index";
             plot.Axes.Left.Label.Text = "Pressure";
             plot.Legend.IsVisible = true;
             plot.Legend.Location = ScottPlot.Alignment.LowerRight;
 
-            // 2. ±éÀúÑ¡ÖĞµÄÍ¨µÀ²¢ÖØĞÂÌí¼Ó»æÍ¼¶ÔÏó
+            // 2. éå†é€‰ä¸­çš„é€šé“å¹¶é‡æ–°æ·»åŠ ç»˜å›¾å¯¹è±¡
             foreach (var selectedText in selectedChannels)
             {
-                // ¼ÙÉè selectedText ¸ñÊ½Îª "CH0", "CH1", ...
+                // å‡è®¾ selectedText æ ¼å¼ä¸º "CH0", "CH1", ...
                 if (selectedText.StartsWith("CH") && int.TryParse(selectedText.Substring(2), out int channelIndex))
                 {
-                    // ¹¹½¨×Öµä Key
+                    // æ„å»ºå­—å…¸ Key
                     int key = sensorIndex * KeyMultiplier + channelIndex;
 
                     if (_dataDictionary.TryGetValue(key, out var data))
                     {
-                        // 3. ½«ÒÑÓĞµÄÊı¾İ»º³åÇøÌí¼Óµ½ ScottPlot ¿Ø¼şÉÏ
-                        // ScottPlot 5 µÄ Scatter »æÍ¼¶ÔÏó¿ÉÒÔÖ±½ÓÒıÓÃ List<double>
+                        // 3. å°†å·²æœ‰çš„æ•°æ®ç¼“å†²åŒºæ·»åŠ åˆ° ScottPlot æ§ä»¶ä¸Š
+                        // ScottPlot 5 çš„ Scatter ç»˜å›¾å¯¹è±¡å¯ä»¥ç›´æ¥å¼•ç”¨ List<double>
                         var newPlotable = plot.Add.Scatter(data.Xs, data.Ys);
                         newPlotable.Label = $"CH{channelIndex}";
 
-                        // 4. ¸üĞÂ×ÖµäÖĞµÄ Plotable ÒıÓÃ
-                        // ÕâÒ»²½·Ç³£ÖØÒª£¡ÒòÎª Scatter ¶ÔÏóÊÇĞÂµÄ£¬±ØĞë¸üĞÂ×ÖµäÖĞ¶ÔËüµÄÒıÓÃ£¬
-                        // ·ñÔò PlotTimer_Tick ½«ÎŞ·¨ÕÒµ½²¢¸üĞÂËü¡£
-                        _dataDictionary[key] = (data.Xs, data.Ys, newPlotable);
+                        // 4. æ›´æ–°å­—å…¸ä¸­çš„ Plotable å¼•ç”¨
+                        // è¿™ä¸€æ­¥éå¸¸é‡è¦ï¼å› ä¸º Scatter å¯¹è±¡æ˜¯æ–°çš„ï¼Œå¿…é¡»æ›´æ–°å­—å…¸ä¸­å¯¹å®ƒçš„å¼•ç”¨ï¼Œ
+                        // å¦åˆ™ PlotTimer_Tick å°†æ— æ³•æ‰¾åˆ°å¹¶æ›´æ–°å®ƒã€‚
+                        _dataDictionary[key] = (data.Buffer, data.Xs, data.Ys, newPlotable);
                     }
                 }
             }
 
-            // 5. ×Ô¶¯Ëõ·ÅºÍË¢ĞÂ
-            // Ê×´Î»æÖÆ»òÖØ»æÊ±£¬ÈÃÍ¼±í×Ô¶¯ÊÊÓ¦ËùÓĞ»æÖÆµÄÊı¾İ·¶Î§¡£
+            // 5. è‡ªåŠ¨ç¼©æ”¾å’Œåˆ·æ–°
+            // é¦–æ¬¡ç»˜åˆ¶æˆ–é‡ç»˜æ—¶ï¼Œè®©å›¾è¡¨è‡ªåŠ¨é€‚åº”æ‰€æœ‰ç»˜åˆ¶çš„æ•°æ®èŒƒå›´ã€‚
             plot.Axes.AutoScale();
             formsPlot.Refresh();
 
         }
+        public class CircularBuffer
+        {
+            private readonly double[] _xs;
+            private readonly double[] _ys;
+            private int _writeIndex = 0;
+            private int _count = 0;
+
+            public int Capacity { get; }
+            public int Count => _count;
+
+            public CircularBuffer(int capacity)
+            {
+                Capacity = capacity;
+                _xs = new double[capacity];
+                _ys = new double[capacity];
+            }
+
+            public void Add(double x, double y)
+            {
+                _xs[_writeIndex] = x;
+                _ys[_writeIndex] = y;
+
+                _writeIndex = (_writeIndex + 1) % Capacity;
+                if (_count < Capacity)
+                    _count++;
+            }
+
+            /// <summary>
+            /// ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Ê±ï¿½ï¿½Ë³ï¿½ò¡±µï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¨Ö»ï¿½ï¿½Ë¢ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+            /// </summary>
+            public void CopyTo(List<double> xs, List<double> ys)
+            {
+                xs.Clear();
+                ys.Clear();
+
+                if (_count == 0)
+                    return;
+
+                int start = (_writeIndex - _count + Capacity) % Capacity;
+
+                for (int i = 0; i < _count; i++)
+                {
+                    int idx = (start + i) % Capacity;
+                    xs.Add(_xs[idx]);
+                    ys.Add(_ys[idx]);
+                }
+            }
+        }
+
         #endregion
 
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBox2.Checked)
+            {
+                yalitu = true;
+            }
+            else
+            {
+                yalitu = false;
+            }
+        }
+
+        private void checkBox3_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBox3.Checked)
+            {
+                diantu = true;
+            }
+            else
+            {
+                diantu = false;
+            }
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            isZeroing = true;
+            pressureCalibBuffers12.Clear();
+            pressureCalibBuffers32.Clear();
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            _autoScrollX = true;
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            _autoScrollX = true;
+        }
     }
 }

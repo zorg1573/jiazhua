@@ -32,6 +32,10 @@
             formTheme1 = new ReaLTaiizor.Forms.FormTheme();
             tableLayoutPanel1 = new TableLayoutPanel();
             cyberGroupBox1 = new ReaLTaiizor.Controls.CyberGroupBox();
+            button5 = new ReaLTaiizor.Controls.Button();
+            button4 = new ReaLTaiizor.Controls.Button();
+            checkBox3 = new CheckBox();
+            checkBox2 = new CheckBox();
             foreverComboBox_rate = new ReaLTaiizor.Controls.ForeverComboBox();
             foreverLabel5 = new ReaLTaiizor.Controls.ForeverLabel();
             checkBox1 = new CheckBox();
@@ -68,6 +72,8 @@
             label_receive = new Label();
             label_port = new Label();
             nightControlBox1 = new ReaLTaiizor.Controls.NightControlBox();
+            button6 = new ReaLTaiizor.Controls.Button();
+            button7 = new ReaLTaiizor.Controls.Button();
             formTheme1.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             cyberGroupBox1.SuspendLayout();
@@ -103,7 +109,7 @@
             formTheme1.Name = "formTheme1";
             formTheme1.Padding = new Padding(3, 28, 3, 28);
             formTheme1.Sizable = true;
-            formTheme1.Size = new Size(1262, 848);
+            formTheme1.Size = new Size(1351, 848);
             formTheme1.SmartBounds = false;
             formTheme1.StartPosition = FormStartPosition.CenterScreen;
             formTheme1.TabIndex = 0;
@@ -121,10 +127,10 @@
             tableLayoutPanel1.Location = new Point(3, 28);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 3;
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 85F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 12.121212F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 82.8282852F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 5F));
-            tableLayoutPanel1.Size = new Size(1256, 792);
+            tableLayoutPanel1.Size = new Size(1345, 792);
             tableLayoutPanel1.TabIndex = 1;
             // 
             // cyberGroupBox1
@@ -142,6 +148,10 @@
             cyberGroupBox1.ColorPen_1 = Color.FromArgb(37, 52, 68);
             cyberGroupBox1.ColorPen_2 = Color.FromArgb(41, 63, 86);
             tableLayoutPanel1.SetColumnSpan(cyberGroupBox1, 2);
+            cyberGroupBox1.Controls.Add(button5);
+            cyberGroupBox1.Controls.Add(button4);
+            cyberGroupBox1.Controls.Add(checkBox3);
+            cyberGroupBox1.Controls.Add(checkBox2);
             cyberGroupBox1.Controls.Add(foreverComboBox_rate);
             cyberGroupBox1.Controls.Add(foreverLabel5);
             cyberGroupBox1.Controls.Add(checkBox1);
@@ -164,12 +174,75 @@
             cyberGroupBox1.RGB = false;
             cyberGroupBox1.Rounding = true;
             cyberGroupBox1.RoundingInt = 10;
-            cyberGroupBox1.Size = new Size(1250, 73);
+            cyberGroupBox1.Size = new Size(1339, 90);
             cyberGroupBox1.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
             cyberGroupBox1.TabIndex = 0;
             cyberGroupBox1.Tag = "Cyber";
             cyberGroupBox1.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
             cyberGroupBox1.Timer_RGB = 300;
+            // 
+            // button5
+            // 
+            button5.BackColor = Color.Transparent;
+            button5.BorderColor = Color.FromArgb(32, 34, 37);
+            button5.EnteredBorderColor = Color.FromArgb(165, 37, 37);
+            button5.EnteredColor = Color.FromArgb(32, 34, 37);
+            button5.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            button5.Image = null;
+            button5.ImageAlign = ContentAlignment.MiddleLeft;
+            button5.InactiveColor = Color.FromArgb(32, 34, 37);
+            button5.Location = new Point(634, 18);
+            button5.Name = "button5";
+            button5.PressedBorderColor = Color.FromArgb(165, 37, 37);
+            button5.PressedColor = Color.FromArgb(165, 37, 37);
+            button5.Size = new Size(75, 40);
+            button5.TabIndex = 14;
+            button5.Text = "重绘";
+            button5.TextAlignment = StringAlignment.Center;
+            // 
+            // button4
+            // 
+            button4.BackColor = Color.Transparent;
+            button4.BorderColor = Color.FromArgb(32, 34, 37);
+            button4.EnteredBorderColor = Color.FromArgb(165, 37, 37);
+            button4.EnteredColor = Color.FromArgb(32, 34, 37);
+            button4.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            button4.Image = null;
+            button4.ImageAlign = ContentAlignment.MiddleLeft;
+            button4.InactiveColor = Color.FromArgb(32, 34, 37);
+            button4.Location = new Point(537, 18);
+            button4.Name = "button4";
+            button4.PressedBorderColor = Color.FromArgb(165, 37, 37);
+            button4.PressedColor = Color.FromArgb(165, 37, 37);
+            button4.Size = new Size(75, 40);
+            button4.TabIndex = 13;
+            button4.Text = "校零";
+            button4.TextAlignment = StringAlignment.Center;
+            button4.Click += button4_Click;
+            // 
+            // checkBox3
+            // 
+            checkBox3.AutoSize = true;
+            checkBox3.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            checkBox3.Location = new Point(228, 66);
+            checkBox3.Name = "checkBox3";
+            checkBox3.Size = new Size(75, 21);
+            checkBox3.TabIndex = 12;
+            checkBox3.Text = "点阵图";
+            checkBox3.UseVisualStyleBackColor = true;
+            checkBox3.CheckedChanged += checkBox3_CheckedChanged;
+            // 
+            // checkBox2
+            // 
+            checkBox2.AutoSize = true;
+            checkBox2.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            checkBox2.Location = new Point(122, 66);
+            checkBox2.Name = "checkBox2";
+            checkBox2.Size = new Size(75, 21);
+            checkBox2.TabIndex = 11;
+            checkBox2.Text = "曲线图";
+            checkBox2.UseVisualStyleBackColor = true;
+            checkBox2.CheckedChanged += checkBox2_CheckedChanged;
             // 
             // foreverComboBox_rate
             // 
@@ -184,7 +257,7 @@
             foreverComboBox_rate.HoverFontColor = Color.White;
             foreverComboBox_rate.ItemHeight = 18;
             foreverComboBox_rate.Items.AddRange(new object[] { "100Hz", "50Hz", "20Hz", "10Hz", "1Hz", "0.1Hz", "1/60Hz" });
-            foreverComboBox_rate.Location = new Point(661, 22);
+            foreverComboBox_rate.Location = new Point(874, 22);
             foreverComboBox_rate.Name = "foreverComboBox_rate";
             foreverComboBox_rate.Size = new Size(121, 24);
             foreverComboBox_rate.TabIndex = 10;
@@ -196,7 +269,7 @@
             foreverLabel5.BackColor = Color.Transparent;
             foreverLabel5.Font = new Font("Segoe UI", 15F, FontStyle.Regular, GraphicsUnit.Point, 0);
             foreverLabel5.ForeColor = Color.LightGray;
-            foreverLabel5.Location = new Point(543, 18);
+            foreverLabel5.Location = new Point(756, 18);
             foreverLabel5.Name = "foreverLabel5";
             foreverLabel5.Size = new Size(112, 28);
             foreverLabel5.TabIndex = 9;
@@ -206,7 +279,7 @@
             // 
             checkBox1.AutoSize = true;
             checkBox1.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            checkBox1.Location = new Point(1158, 26);
+            checkBox1.Location = new Point(20, 66);
             checkBox1.Name = "checkBox1";
             checkBox1.Size = new Size(75, 21);
             checkBox1.TabIndex = 8;
@@ -224,7 +297,7 @@
             button1.Image = null;
             button1.ImageAlign = ContentAlignment.MiddleLeft;
             button1.InactiveColor = Color.FromArgb(32, 34, 37);
-            button1.Location = new Point(1057, 24);
+            button1.Location = new Point(1270, 24);
             button1.Name = "button1";
             button1.PressedBorderColor = Color.FromArgb(165, 37, 37);
             button1.PressedColor = Color.FromArgb(165, 37, 37);
@@ -239,7 +312,7 @@
             crownTextBox_save.BackColor = Color.FromArgb(45, 47, 49);
             crownTextBox_save.BorderStyle = BorderStyle.FixedSingle;
             crownTextBox_save.ForeColor = Color.FromArgb(220, 220, 220);
-            crownTextBox_save.Location = new Point(914, 24);
+            crownTextBox_save.Location = new Point(1127, 24);
             crownTextBox_save.Name = "crownTextBox_save";
             crownTextBox_save.Size = new Size(137, 22);
             crownTextBox_save.TabIndex = 6;
@@ -251,7 +324,7 @@
             foreverLabel4.BackColor = Color.Transparent;
             foreverLabel4.Font = new Font("Segoe UI", 15F, FontStyle.Regular, GraphicsUnit.Point, 0);
             foreverLabel4.ForeColor = Color.LightGray;
-            foreverLabel4.Location = new Point(796, 18);
+            foreverLabel4.Location = new Point(1009, 18);
             foreverLabel4.Name = "foreverLabel4";
             foreverLabel4.Size = new Size(112, 28);
             foreverLabel4.TabIndex = 5;
@@ -338,11 +411,11 @@
             hopeTabPage1.ForeColorB = Color.Gray;
             hopeTabPage1.ForeColorC = Color.FromArgb(150, 255, 255, 255);
             hopeTabPage1.ItemSize = new Size(120, 40);
-            hopeTabPage1.Location = new Point(3, 82);
+            hopeTabPage1.Location = new Point(3, 99);
             hopeTabPage1.Name = "hopeTabPage1";
             hopeTabPage1.PixelOffsetType = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
             hopeTabPage1.SelectedIndex = 0;
-            hopeTabPage1.Size = new Size(1250, 667);
+            hopeTabPage1.Size = new Size(1339, 650);
             hopeTabPage1.SizeMode = TabSizeMode.Fixed;
             hopeTabPage1.SmoothingType = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
             hopeTabPage1.TabIndex = 2;
@@ -358,7 +431,7 @@
             tabPage4.Location = new Point(0, 40);
             tabPage4.Name = "tabPage4";
             tabPage4.Padding = new Padding(3);
-            tabPage4.Size = new Size(1250, 627);
+            tabPage4.Size = new Size(1339, 610);
             tabPage4.TabIndex = 0;
             tabPage4.Text = "曲线图";
             // 
@@ -375,8 +448,8 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(tableLayoutPanel3);
-            splitContainer1.Size = new Size(1244, 621);
-            splitContainer1.SplitterDistance = 628;
+            splitContainer1.Size = new Size(1333, 604);
+            splitContainer1.SplitterDistance = 672;
             splitContainer1.TabIndex = 0;
             // 
             // tableLayoutPanel2
@@ -392,7 +465,7 @@
             tableLayoutPanel2.RowCount = 2;
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 8.869565F));
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 91.13043F));
-            tableLayoutPanel2.Size = new Size(628, 621);
+            tableLayoutPanel2.Size = new Size(672, 604);
             tableLayoutPanel2.TabIndex = 0;
             // 
             // formsPlot1
@@ -400,9 +473,9 @@
             formsPlot1.DisplayScale = 1F;
             formsPlot1.Dock = DockStyle.Fill;
             formsPlot1.Font = new Font("微软雅黑", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            formsPlot1.Location = new Point(4, 59);
+            formsPlot1.Location = new Point(4, 58);
             formsPlot1.Name = "formsPlot1";
-            formsPlot1.Size = new Size(620, 558);
+            formsPlot1.Size = new Size(664, 542);
             formsPlot1.TabIndex = 0;
             // 
             // flowLayoutPanel1
@@ -410,10 +483,11 @@
             flowLayoutPanel1.Controls.Add(foreverLabel1);
             flowLayoutPanel1.Controls.Add(uCheckComboBox1);
             flowLayoutPanel1.Controls.Add(button2);
+            flowLayoutPanel1.Controls.Add(button7);
             flowLayoutPanel1.Dock = DockStyle.Fill;
             flowLayoutPanel1.Location = new Point(4, 4);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
-            flowLayoutPanel1.Size = new Size(620, 48);
+            flowLayoutPanel1.Size = new Size(664, 47);
             flowLayoutPanel1.TabIndex = 1;
             // 
             // foreverLabel1
@@ -472,7 +546,7 @@
             tableLayoutPanel3.RowCount = 2;
             tableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 8.869565F));
             tableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 91.13043F));
-            tableLayoutPanel3.Size = new Size(612, 621);
+            tableLayoutPanel3.Size = new Size(657, 604);
             tableLayoutPanel3.TabIndex = 1;
             // 
             // formsPlot2
@@ -480,9 +554,9 @@
             formsPlot2.DisplayScale = 1F;
             formsPlot2.Dock = DockStyle.Fill;
             formsPlot2.Font = new Font("微软雅黑", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            formsPlot2.Location = new Point(4, 59);
+            formsPlot2.Location = new Point(4, 58);
             formsPlot2.Name = "formsPlot2";
-            formsPlot2.Size = new Size(604, 558);
+            formsPlot2.Size = new Size(649, 542);
             formsPlot2.TabIndex = 0;
             // 
             // flowLayoutPanel2
@@ -490,10 +564,11 @@
             flowLayoutPanel2.Controls.Add(foreverLabel2);
             flowLayoutPanel2.Controls.Add(uCheckComboBox2);
             flowLayoutPanel2.Controls.Add(button3);
+            flowLayoutPanel2.Controls.Add(button6);
             flowLayoutPanel2.Dock = DockStyle.Fill;
             flowLayoutPanel2.Location = new Point(4, 4);
             flowLayoutPanel2.Name = "flowLayoutPanel2";
-            flowLayoutPanel2.Size = new Size(604, 48);
+            flowLayoutPanel2.Size = new Size(649, 47);
             flowLayoutPanel2.TabIndex = 1;
             // 
             // foreverLabel2
@@ -546,7 +621,7 @@
             tabPage5.Location = new Point(0, 40);
             tabPage5.Name = "tabPage5";
             tabPage5.Padding = new Padding(3);
-            tabPage5.Size = new Size(1250, 627);
+            tabPage5.Size = new Size(1339, 610);
             tabPage5.TabIndex = 1;
             tabPage5.Text = "点阵图";
             // 
@@ -564,8 +639,8 @@
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(tableLayoutPanel5);
-            splitContainer2.Size = new Size(1244, 621);
-            splitContainer2.SplitterDistance = 629;
+            splitContainer2.Size = new Size(1333, 604);
+            splitContainer2.SplitterDistance = 674;
             splitContainer2.TabIndex = 0;
             // 
             // tableLayoutPanel4
@@ -580,7 +655,7 @@
             tableLayoutPanel4.Name = "tableLayoutPanel4";
             tableLayoutPanel4.RowCount = 1;
             tableLayoutPanel4.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel4.Size = new Size(627, 619);
+            tableLayoutPanel4.Size = new Size(672, 602);
             tableLayoutPanel4.TabIndex = 1;
             // 
             // doubleBufferedPanelCloud12
@@ -592,11 +667,11 @@
             doubleBufferedPanelCloud12.CenterY = 100D;
             doubleBufferedPanelCloud12.Dock = DockStyle.Fill;
             doubleBufferedPanelCloud12.Guiyihua = false;
-            doubleBufferedPanelCloud12.Location = new Point(128, 3);
+            doubleBufferedPanelCloud12.Location = new Point(137, 3);
             doubleBufferedPanelCloud12.MaxValueColor = 800D;
             doubleBufferedPanelCloud12.Name = "doubleBufferedPanelCloud12";
             doubleBufferedPanelCloud12.Sigma = 0D;
-            doubleBufferedPanelCloud12.Size = new Size(370, 613);
+            doubleBufferedPanelCloud12.Size = new Size(397, 596);
             doubleBufferedPanelCloud12.TabIndex = 0;
             doubleBufferedPanelCloud12.Values = new double[]
     {
@@ -641,7 +716,7 @@
             tableLayoutPanel5.Name = "tableLayoutPanel5";
             tableLayoutPanel5.RowCount = 1;
             tableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel5.Size = new Size(609, 619);
+            tableLayoutPanel5.Size = new Size(653, 602);
             tableLayoutPanel5.TabIndex = 2;
             // 
             // doubleBufferedPanelCloud32
@@ -653,11 +728,11 @@
             doubleBufferedPanelCloud32.CenterY = 100D;
             doubleBufferedPanelCloud32.Dock = DockStyle.Fill;
             doubleBufferedPanelCloud32.Guiyihua = false;
-            doubleBufferedPanelCloud32.Location = new Point(124, 3);
+            doubleBufferedPanelCloud32.Location = new Point(133, 3);
             doubleBufferedPanelCloud32.MaxValueColor = 800D;
             doubleBufferedPanelCloud32.Name = "doubleBufferedPanelCloud32";
             doubleBufferedPanelCloud32.Sigma = 0D;
-            doubleBufferedPanelCloud32.Size = new Size(359, 613);
+            doubleBufferedPanelCloud32.Size = new Size(385, 596);
             doubleBufferedPanelCloud32.TabIndex = 0;
             doubleBufferedPanelCloud32.Values = new double[]
     {
@@ -738,7 +813,7 @@
             panel1.Dock = DockStyle.Fill;
             panel1.Location = new Point(3, 755);
             panel1.Name = "panel1";
-            panel1.Size = new Size(633, 34);
+            panel1.Size = new Size(678, 34);
             panel1.TabIndex = 3;
             // 
             // label_save
@@ -785,7 +860,7 @@
             nightControlBox1.EnableMaximizeColor = Color.FromArgb(160, 160, 160);
             nightControlBox1.EnableMinimizeButton = true;
             nightControlBox1.EnableMinimizeColor = Color.FromArgb(160, 160, 160);
-            nightControlBox1.Location = new Point(1123, 0);
+            nightControlBox1.Location = new Point(1212, 0);
             nightControlBox1.MaximizeHoverColor = Color.FromArgb(15, 255, 255, 255);
             nightControlBox1.MaximizeHoverForeColor = Color.White;
             nightControlBox1.MinimizeHoverColor = Color.FromArgb(15, 255, 255, 255);
@@ -794,11 +869,51 @@
             nightControlBox1.Size = new Size(139, 31);
             nightControlBox1.TabIndex = 0;
             // 
+            // button6
+            // 
+            button6.BackColor = Color.Transparent;
+            button6.BorderColor = Color.FromArgb(32, 34, 37);
+            button6.EnteredBorderColor = Color.FromArgb(165, 37, 37);
+            button6.EnteredColor = Color.FromArgb(32, 34, 37);
+            button6.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            button6.Image = null;
+            button6.ImageAlign = ContentAlignment.MiddleLeft;
+            button6.InactiveColor = Color.FromArgb(32, 34, 37);
+            button6.Location = new Point(413, 3);
+            button6.Name = "button6";
+            button6.PressedBorderColor = Color.FromArgb(165, 37, 37);
+            button6.PressedColor = Color.FromArgb(165, 37, 37);
+            button6.Size = new Size(87, 29);
+            button6.TabIndex = 4;
+            button6.Text = "回到实时";
+            button6.TextAlignment = StringAlignment.Center;
+            button6.Click += button6_Click;
+            // 
+            // button7
+            // 
+            button7.BackColor = Color.Transparent;
+            button7.BorderColor = Color.FromArgb(32, 34, 37);
+            button7.EnteredBorderColor = Color.FromArgb(165, 37, 37);
+            button7.EnteredColor = Color.FromArgb(32, 34, 37);
+            button7.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            button7.Image = null;
+            button7.ImageAlign = ContentAlignment.MiddleLeft;
+            button7.InactiveColor = Color.FromArgb(32, 34, 37);
+            button7.Location = new Point(413, 3);
+            button7.Name = "button7";
+            button7.PressedBorderColor = Color.FromArgb(165, 37, 37);
+            button7.PressedColor = Color.FromArgb(165, 37, 37);
+            button7.Size = new Size(87, 29);
+            button7.TabIndex = 4;
+            button7.Text = "回到实时";
+            button7.TextAlignment = StringAlignment.Center;
+            button7.Click += button7_Click;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1262, 848);
+            ClientSize = new Size(1351, 848);
             Controls.Add(formTheme1);
             FormBorderStyle = FormBorderStyle.None;
             MaximumSize = new Size(1920, 1040);
@@ -876,5 +991,11 @@
         private TableLayoutPanel tableLayoutPanel4;
         private TableLayoutPanel tableLayoutPanel5;
         private DoubleBufferedPanelCloud32 doubleBufferedPanelCloud32;
+        private CheckBox checkBox3;
+        private CheckBox checkBox2;
+        private ReaLTaiizor.Controls.Button button4;
+        private ReaLTaiizor.Controls.Button button5;
+        private ReaLTaiizor.Controls.Button button7;
+        private ReaLTaiizor.Controls.Button button6;
     }
 }
