@@ -32,7 +32,6 @@
             formTheme1 = new ReaLTaiizor.Forms.FormTheme();
             tableLayoutPanel1 = new TableLayoutPanel();
             cyberGroupBox1 = new ReaLTaiizor.Controls.CyberGroupBox();
-            button5 = new ReaLTaiizor.Controls.Button();
             button4 = new ReaLTaiizor.Controls.Button();
             checkBox3 = new CheckBox();
             checkBox2 = new CheckBox();
@@ -55,12 +54,14 @@
             foreverLabel1 = new ReaLTaiizor.Controls.ForeverLabel();
             uCheckComboBox1 = new UCheckComboBox(components);
             button2 = new ReaLTaiizor.Controls.Button();
+            button7 = new ReaLTaiizor.Controls.Button();
             tableLayoutPanel3 = new TableLayoutPanel();
             formsPlot2 = new ScottPlot.WinForms.FormsPlot();
             flowLayoutPanel2 = new FlowLayoutPanel();
             foreverLabel2 = new ReaLTaiizor.Controls.ForeverLabel();
             uCheckComboBox2 = new UCheckComboBox(components);
             button3 = new ReaLTaiizor.Controls.Button();
+            button6 = new ReaLTaiizor.Controls.Button();
             tabPage5 = new TabPage();
             splitContainer2 = new SplitContainer();
             tableLayoutPanel4 = new TableLayoutPanel();
@@ -72,8 +73,10 @@
             label_receive = new Label();
             label_port = new Label();
             nightControlBox1 = new ReaLTaiizor.Controls.NightControlBox();
-            button6 = new ReaLTaiizor.Controls.Button();
-            button7 = new ReaLTaiizor.Controls.Button();
+            crownTextBox_addr12 = new ReaLTaiizor.Controls.CrownTextBox();
+            foreverLabel6 = new ReaLTaiizor.Controls.ForeverLabel();
+            crownTextBox_addr32 = new ReaLTaiizor.Controls.CrownTextBox();
+            foreverLabel7 = new ReaLTaiizor.Controls.ForeverLabel();
             formTheme1.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             cyberGroupBox1.SuspendLayout();
@@ -148,7 +151,10 @@
             cyberGroupBox1.ColorPen_1 = Color.FromArgb(37, 52, 68);
             cyberGroupBox1.ColorPen_2 = Color.FromArgb(41, 63, 86);
             tableLayoutPanel1.SetColumnSpan(cyberGroupBox1, 2);
-            cyberGroupBox1.Controls.Add(button5);
+            cyberGroupBox1.Controls.Add(crownTextBox_addr32);
+            cyberGroupBox1.Controls.Add(foreverLabel7);
+            cyberGroupBox1.Controls.Add(crownTextBox_addr12);
+            cyberGroupBox1.Controls.Add(foreverLabel6);
             cyberGroupBox1.Controls.Add(button4);
             cyberGroupBox1.Controls.Add(checkBox3);
             cyberGroupBox1.Controls.Add(checkBox2);
@@ -181,25 +187,6 @@
             cyberGroupBox1.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
             cyberGroupBox1.Timer_RGB = 300;
             // 
-            // button5
-            // 
-            button5.BackColor = Color.Transparent;
-            button5.BorderColor = Color.FromArgb(32, 34, 37);
-            button5.EnteredBorderColor = Color.FromArgb(165, 37, 37);
-            button5.EnteredColor = Color.FromArgb(32, 34, 37);
-            button5.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            button5.Image = null;
-            button5.ImageAlign = ContentAlignment.MiddleLeft;
-            button5.InactiveColor = Color.FromArgb(32, 34, 37);
-            button5.Location = new Point(634, 18);
-            button5.Name = "button5";
-            button5.PressedBorderColor = Color.FromArgb(165, 37, 37);
-            button5.PressedColor = Color.FromArgb(165, 37, 37);
-            button5.Size = new Size(75, 40);
-            button5.TabIndex = 14;
-            button5.Text = "重绘";
-            button5.TextAlignment = StringAlignment.Center;
-            // 
             // button4
             // 
             button4.BackColor = Color.Transparent;
@@ -224,7 +211,7 @@
             // 
             checkBox3.AutoSize = true;
             checkBox3.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            checkBox3.Location = new Point(228, 66);
+            checkBox3.Location = new Point(718, 66);
             checkBox3.Name = "checkBox3";
             checkBox3.Size = new Size(75, 21);
             checkBox3.TabIndex = 12;
@@ -236,7 +223,7 @@
             // 
             checkBox2.AutoSize = true;
             checkBox2.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            checkBox2.Location = new Point(122, 66);
+            checkBox2.Location = new Point(612, 66);
             checkBox2.Name = "checkBox2";
             checkBox2.Size = new Size(75, 21);
             checkBox2.TabIndex = 11;
@@ -257,7 +244,7 @@
             foreverComboBox_rate.HoverFontColor = Color.White;
             foreverComboBox_rate.ItemHeight = 18;
             foreverComboBox_rate.Items.AddRange(new object[] { "100Hz", "50Hz", "20Hz", "10Hz", "1Hz", "0.1Hz", "1/60Hz" });
-            foreverComboBox_rate.Location = new Point(874, 22);
+            foreverComboBox_rate.Location = new Point(772, 22);
             foreverComboBox_rate.Name = "foreverComboBox_rate";
             foreverComboBox_rate.Size = new Size(121, 24);
             foreverComboBox_rate.TabIndex = 10;
@@ -269,7 +256,7 @@
             foreverLabel5.BackColor = Color.Transparent;
             foreverLabel5.Font = new Font("Segoe UI", 15F, FontStyle.Regular, GraphicsUnit.Point, 0);
             foreverLabel5.ForeColor = Color.LightGray;
-            foreverLabel5.Location = new Point(756, 18);
+            foreverLabel5.Location = new Point(654, 18);
             foreverLabel5.Name = "foreverLabel5";
             foreverLabel5.Size = new Size(112, 28);
             foreverLabel5.TabIndex = 9;
@@ -279,7 +266,7 @@
             // 
             checkBox1.AutoSize = true;
             checkBox1.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            checkBox1.Location = new Point(20, 66);
+            checkBox1.Location = new Point(510, 66);
             checkBox1.Name = "checkBox1";
             checkBox1.Size = new Size(75, 21);
             checkBox1.TabIndex = 8;
@@ -297,7 +284,7 @@
             button1.Image = null;
             button1.ImageAlign = ContentAlignment.MiddleLeft;
             button1.InactiveColor = Color.FromArgb(32, 34, 37);
-            button1.Location = new Point(1270, 24);
+            button1.Location = new Point(1168, 24);
             button1.Name = "button1";
             button1.PressedBorderColor = Color.FromArgb(165, 37, 37);
             button1.PressedColor = Color.FromArgb(165, 37, 37);
@@ -312,7 +299,7 @@
             crownTextBox_save.BackColor = Color.FromArgb(45, 47, 49);
             crownTextBox_save.BorderStyle = BorderStyle.FixedSingle;
             crownTextBox_save.ForeColor = Color.FromArgb(220, 220, 220);
-            crownTextBox_save.Location = new Point(1127, 24);
+            crownTextBox_save.Location = new Point(1025, 24);
             crownTextBox_save.Name = "crownTextBox_save";
             crownTextBox_save.Size = new Size(137, 22);
             crownTextBox_save.TabIndex = 6;
@@ -324,7 +311,7 @@
             foreverLabel4.BackColor = Color.Transparent;
             foreverLabel4.Font = new Font("Segoe UI", 15F, FontStyle.Regular, GraphicsUnit.Point, 0);
             foreverLabel4.ForeColor = Color.LightGray;
-            foreverLabel4.Location = new Point(1009, 18);
+            foreverLabel4.Location = new Point(907, 18);
             foreverLabel4.Name = "foreverLabel4";
             foreverLabel4.Size = new Size(112, 28);
             foreverLabel4.TabIndex = 5;
@@ -533,6 +520,26 @@
             button2.TextAlignment = StringAlignment.Center;
             button2.Click += button2_Click;
             // 
+            // button7
+            // 
+            button7.BackColor = Color.Transparent;
+            button7.BorderColor = Color.FromArgb(32, 34, 37);
+            button7.EnteredBorderColor = Color.FromArgb(165, 37, 37);
+            button7.EnteredColor = Color.FromArgb(32, 34, 37);
+            button7.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            button7.Image = null;
+            button7.ImageAlign = ContentAlignment.MiddleLeft;
+            button7.InactiveColor = Color.FromArgb(32, 34, 37);
+            button7.Location = new Point(413, 3);
+            button7.Name = "button7";
+            button7.PressedBorderColor = Color.FromArgb(165, 37, 37);
+            button7.PressedColor = Color.FromArgb(165, 37, 37);
+            button7.Size = new Size(87, 29);
+            button7.TabIndex = 4;
+            button7.Text = "回到实时";
+            button7.TextAlignment = StringAlignment.Center;
+            button7.Click += button7_Click;
+            // 
             // tableLayoutPanel3
             // 
             tableLayoutPanel3.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
@@ -613,6 +620,26 @@
             button3.Text = "确定";
             button3.TextAlignment = StringAlignment.Center;
             button3.Click += button3_Click;
+            // 
+            // button6
+            // 
+            button6.BackColor = Color.Transparent;
+            button6.BorderColor = Color.FromArgb(32, 34, 37);
+            button6.EnteredBorderColor = Color.FromArgb(165, 37, 37);
+            button6.EnteredColor = Color.FromArgb(32, 34, 37);
+            button6.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            button6.Image = null;
+            button6.ImageAlign = ContentAlignment.MiddleLeft;
+            button6.InactiveColor = Color.FromArgb(32, 34, 37);
+            button6.Location = new Point(413, 3);
+            button6.Name = "button6";
+            button6.PressedBorderColor = Color.FromArgb(165, 37, 37);
+            button6.PressedColor = Color.FromArgb(165, 37, 37);
+            button6.Size = new Size(87, 29);
+            button6.TabIndex = 4;
+            button6.Text = "回到实时";
+            button6.TextAlignment = StringAlignment.Center;
+            button6.Click += button6_Click;
             // 
             // tabPage5
             // 
@@ -869,45 +896,49 @@
             nightControlBox1.Size = new Size(139, 31);
             nightControlBox1.TabIndex = 0;
             // 
-            // button6
+            // crownTextBox_addr12
             // 
-            button6.BackColor = Color.Transparent;
-            button6.BorderColor = Color.FromArgb(32, 34, 37);
-            button6.EnteredBorderColor = Color.FromArgb(165, 37, 37);
-            button6.EnteredColor = Color.FromArgb(32, 34, 37);
-            button6.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            button6.Image = null;
-            button6.ImageAlign = ContentAlignment.MiddleLeft;
-            button6.InactiveColor = Color.FromArgb(32, 34, 37);
-            button6.Location = new Point(413, 3);
-            button6.Name = "button6";
-            button6.PressedBorderColor = Color.FromArgb(165, 37, 37);
-            button6.PressedColor = Color.FromArgb(165, 37, 37);
-            button6.Size = new Size(87, 29);
-            button6.TabIndex = 4;
-            button6.Text = "回到实时";
-            button6.TextAlignment = StringAlignment.Center;
-            button6.Click += button6_Click;
+            crownTextBox_addr12.BackColor = Color.FromArgb(45, 47, 49);
+            crownTextBox_addr12.BorderStyle = BorderStyle.FixedSingle;
+            crownTextBox_addr12.ForeColor = Color.FromArgb(220, 220, 220);
+            crownTextBox_addr12.Location = new Point(92, 60);
+            crownTextBox_addr12.Name = "crownTextBox_addr12";
+            crownTextBox_addr12.Size = new Size(43, 22);
+            crownTextBox_addr12.TabIndex = 15;
             // 
-            // button7
+            // foreverLabel6
             // 
-            button7.BackColor = Color.Transparent;
-            button7.BorderColor = Color.FromArgb(32, 34, 37);
-            button7.EnteredBorderColor = Color.FromArgb(165, 37, 37);
-            button7.EnteredColor = Color.FromArgb(32, 34, 37);
-            button7.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            button7.Image = null;
-            button7.ImageAlign = ContentAlignment.MiddleLeft;
-            button7.InactiveColor = Color.FromArgb(32, 34, 37);
-            button7.Location = new Point(413, 3);
-            button7.Name = "button7";
-            button7.PressedBorderColor = Color.FromArgb(165, 37, 37);
-            button7.PressedColor = Color.FromArgb(165, 37, 37);
-            button7.Size = new Size(87, 29);
-            button7.TabIndex = 4;
-            button7.Text = "回到实时";
-            button7.TextAlignment = StringAlignment.Center;
-            button7.Click += button7_Click;
+            foreverLabel6.AutoSize = true;
+            foreverLabel6.BackColor = Color.Transparent;
+            foreverLabel6.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            foreverLabel6.ForeColor = Color.LightGray;
+            foreverLabel6.Location = new Point(20, 58);
+            foreverLabel6.Name = "foreverLabel6";
+            foreverLabel6.Size = new Size(74, 19);
+            foreverLabel6.TabIndex = 14;
+            foreverLabel6.Text = "S12地址：";
+            // 
+            // crownTextBox_addr32
+            // 
+            crownTextBox_addr32.BackColor = Color.FromArgb(45, 47, 49);
+            crownTextBox_addr32.BorderStyle = BorderStyle.FixedSingle;
+            crownTextBox_addr32.ForeColor = Color.FromArgb(220, 220, 220);
+            crownTextBox_addr32.Location = new Point(213, 60);
+            crownTextBox_addr32.Name = "crownTextBox_addr32";
+            crownTextBox_addr32.Size = new Size(43, 22);
+            crownTextBox_addr32.TabIndex = 17;
+            // 
+            // foreverLabel7
+            // 
+            foreverLabel7.AutoSize = true;
+            foreverLabel7.BackColor = Color.Transparent;
+            foreverLabel7.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            foreverLabel7.ForeColor = Color.LightGray;
+            foreverLabel7.Location = new Point(141, 58);
+            foreverLabel7.Name = "foreverLabel7";
+            foreverLabel7.Size = new Size(74, 19);
+            foreverLabel7.TabIndex = 16;
+            foreverLabel7.Text = "S32地址：";
             // 
             // MainForm
             // 
@@ -994,8 +1025,11 @@
         private CheckBox checkBox3;
         private CheckBox checkBox2;
         private ReaLTaiizor.Controls.Button button4;
-        private ReaLTaiizor.Controls.Button button5;
         private ReaLTaiizor.Controls.Button button7;
         private ReaLTaiizor.Controls.Button button6;
+        private ReaLTaiizor.Controls.CrownTextBox crownTextBox_addr12;
+        private ReaLTaiizor.Controls.ForeverLabel foreverLabel6;
+        private ReaLTaiizor.Controls.CrownTextBox crownTextBox_addr32;
+        private ReaLTaiizor.Controls.ForeverLabel foreverLabel7;
     }
 }

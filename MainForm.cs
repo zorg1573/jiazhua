@@ -24,6 +24,8 @@ namespace jiazhua
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
+            crownTextBox_addr12.Text = "1";
+            crownTextBox_addr32.Text = "2";
             var data = new List<object>();
 
             for (int i = 1; i <= 12; i++)
@@ -213,6 +215,8 @@ namespace jiazhua
         private CancellationTokenSource cts;
         private List<string> biaoTouName = new List<string> { "LogTime", "Sensor", };
         byte[][] memsCommands = new byte[2][];
+        private int s12addr = 1;
+        private int s32addr = 2;
         private void button_open_Click(object sender, EventArgs e)
         {
             if (!serialPort.IsOpen)
@@ -220,6 +224,21 @@ namespace jiazhua
                 if (foreverComboBox_port.SelectedIndex == -1)
                 {
                     MessageBox.Show("请选择串口");
+                    return;
+                }
+
+                if (crownTextBox_addr12.Text == "" && crownTextBox_addr32.Text == "")
+                {
+                    MessageBox.Show("请填写地址，S12为奇数，S32为偶数");
+                    return;
+                }
+                s12addr = int.Parse(crownTextBox_addr12.Text);
+                s32addr = int.Parse(crownTextBox_addr32.Text);
+                bool isEven = (s32addr & 1) == 0; // 偶数
+                bool isOdd = (s12addr & 1) == 1; // 奇数
+                if (!isEven || !isOdd)
+                {
+                    MessageBox.Show("请填写地址，S12为奇数，S32为偶数");
                     return;
                 }
                 // 构建 SerialConfig 对象
@@ -291,7 +310,7 @@ namespace jiazhua
 
                 guiyihua = checkBox1.Checked;
                 memsCommands = new byte[2][];
-                List<int> fingerNum = [1,2];
+                List<int> fingerNum = [s12addr, s32addr];
                 for (int i = 0; i < fingerNum.Count; i++)
                 {
                     memsCommands[i] = new byte[] { 0x7B, 0xB7, (byte)(fingerNum[i]) };
@@ -484,7 +503,7 @@ namespace jiazhua
         private const int MaxQueueSize = 2000;
         private int MaxVisiblePackets = 200;
         private BlockingCollection<List<string>> uiQueue = new BlockingCollection<List<string>>(MaxQueueSize);
-        
+
         // 丢包统计（工业级监控）
         private long droppedPacketsCount = 0;
         private long totalEnqueuedPackets = 0;
@@ -492,8 +511,8 @@ namespace jiazhua
         // 创建全局字典来存储每个 addr 对应的温度和压力数据
         public struct SensorData
         {
-            public List<double> TemperatureData; 
-            public List<double> PressureData;  
+            public List<double> TemperatureData;
+            public List<double> PressureData;
 
             public SensorData()
             {
@@ -639,8 +658,8 @@ namespace jiazhua
                         }
                     }
                 }
-                catch (TimeoutException) 
-                { 
+                catch (TimeoutException)
+                {
                     // 超时是正常情况，继续循环
                 }
                 catch (IOException ex)
@@ -976,14 +995,14 @@ namespace jiazhua
                     long currentCount = Interlocked.Read(ref totalPacketCount);
                     long droppedCount = Interlocked.Read(ref droppedPacketsCount);
                     long enqueuedCount = Interlocked.Read(ref totalEnqueuedPackets);
-                    
+
                     // 计算丢包率（百分比）
                     double dropRate = 0.0;
                     if (enqueuedCount > 0)
                     {
                         dropRate = (double)droppedCount / enqueuedCount * 100.0;
                     }
-                    
+
                     if (label_receive.InvokeRequired)
                     {
                         label_receive.BeginInvoke(new Action(() =>
@@ -1636,21 +1655,21 @@ namespace jiazhua
             _plotTimer.Tick += PlotTimer_Tick;
             _plotTimer.Start();
         }
-        
+
         // 工业级：图表刷新性能监控
         private DateTime lastPlotRefreshTime = DateTime.Now;
         private int plotRefreshCount = 0;
 
         private void PlotTimer_Tick(object? sender, EventArgs e)
         {
-/*            doubleBufferedPanelCloud12.Values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-            doubleBufferedPanelCloud12.Invalidate();
-            doubleBufferedPanelCloud32.Values = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32];
-            doubleBufferedPanelCloud32.Invalidate();*/
+            /*            doubleBufferedPanelCloud12.Values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+                        doubleBufferedPanelCloud12.Invalidate();
+                        doubleBufferedPanelCloud32.Values = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32];
+                        doubleBufferedPanelCloud32.Invalidate();*/
             // 用于记录哪些图表需要刷新
             bool refreshPlot1 = false;
             bool refreshPlot2 = false;
-            
+
             // 跟踪哪些通道有更新，只更新这些通道
             HashSet<int> updatedChannels12 = new HashSet<int>();
             HashSet<int> updatedChannels32 = new HashSet<int>();
@@ -1692,7 +1711,7 @@ namespace jiazhua
             if (refreshPlot1ThisCycle)
             {
                 var plt1 = formsPlot1.Plot;
-                
+
                 // 只更新有变化的通道，而不是所有通道
                 foreach (int channel in updatedChannels12)
                 {
@@ -1733,7 +1752,7 @@ namespace jiazhua
             if (refreshPlot2ThisCycle)
             {
                 var plt2 = formsPlot2.Plot;
-                
+
                 // 只更新有变化的通道
                 foreach (int channel in updatedChannels32)
                 {
@@ -1956,6 +1975,11 @@ namespace jiazhua
         private void button7_Click(object sender, EventArgs e)
         {
             _autoScrollX = true;
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
