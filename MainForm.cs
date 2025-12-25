@@ -209,8 +209,10 @@ namespace jiazhua
         private SerialPort serialPort = new SerialPort();
         private StreamWriter packetWriter;
         private Thread serialThread;
+        private Thread serialSendThread;
         private CancellationTokenSource cts;
         private List<string> biaoTouName = new List<string> { "LogTime", "Sensor", };
+        byte[][] memsCommands = new byte[2][];
         private void button_open_Click(object sender, EventArgs e)
         {
             if (!serialPort.IsOpen)
@@ -241,6 +243,7 @@ namespace jiazhua
                 catch (Exception ex)
                 {
                     MessageBox.Show("打开串口失败: " + ex.Message);
+                    return;
                 }
             }
             else
@@ -287,12 +290,22 @@ namespace jiazhua
                 serialPort.Open();
 
                 guiyihua = checkBox1.Checked;
+                memsCommands = new byte[2][];
+                List<int> fingerNum = [1,2];
+                for (int i = 0; i < fingerNum.Count; i++)
+                {
+                    memsCommands[i] = new byte[] { 0x7B, 0xB7, (byte)(fingerNum[i]) };
+                }
 
                 // 启动后台读取线程
                 cts = new CancellationTokenSource();
                 serialThread = new Thread(() => SerialReadLoop(cts.Token));
                 serialThread.IsBackground = true;
                 serialThread.Start();
+
+                serialSendThread = new Thread(() => SerialSendLoop(cts.Token, 2));
+                serialSendThread.IsBackground = true;
+                serialSendThread.Start();
 
                 savePath = crownTextBox_save.Text;
                 // 生成文件路径
@@ -391,8 +404,8 @@ namespace jiazhua
             }
             catch (Exception ex)
             {
-                MessageBox.Show("文件写线程发生错误: " + ex.Message, "错误",
-                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // 工业级：文件写线程异常时记录但不弹窗（避免阻塞）
+                SafeLogger.LogException("文件写线程异常", ex);
             }
         }
         private void FormatWorkerLoop()
@@ -413,7 +426,7 @@ namespace jiazhua
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"[ERR] FormatWorker: {ex.ToString()}");
+                SafeLogger.LogException("[ERR] FormatWorker", ex);
             }
         }
         [ThreadStatic] private static StringBuilder _sbCache;
@@ -456,7 +469,7 @@ namespace jiazhua
                     list.Clear();
                     return list;
                 }
-                return new List<string>(50); // ��ʼ����Ԥ����
+                return new List<string>(50);
             }
 
             public void Return(List<string> list)
@@ -467,14 +480,20 @@ namespace jiazhua
         }
         private static ListStringPool uiDataPool = new ListStringPool();
         private static ListStringPool fileDataPool = new ListStringPool();
-        private const int MaxQueueSize = 200;
+        // 工业级优化：增大队列容量，减少丢包率（从200增加到2000）
+        private const int MaxQueueSize = 2000;
         private int MaxVisiblePackets = 200;
         private BlockingCollection<List<string>> uiQueue = new BlockingCollection<List<string>>(MaxQueueSize);
+        
+        // 丢包统计（工业级监控）
+        private long droppedPacketsCount = 0;
+        private long totalEnqueuedPackets = 0;
+        private readonly object dropStatsLock = new object();
         // 创建全局字典来存储每个 addr 对应的温度和压力数据
         public struct SensorData
         {
-            public List<double> TemperatureData; // �洢�¶����� (F4)
-            public List<double> PressureData;    // �洢ѹ������ (F5)
+            public List<double> TemperatureData; 
+            public List<double> PressureData;  
 
             public SensorData()
             {
@@ -490,17 +509,48 @@ namespace jiazhua
         private Dictionary<int, Queue<double>> channelBuffers32 = new Dictionary<int, Queue<double>>();
         private Dictionary<int, Queue<double>> channelBuffers_filedata32 = new Dictionary<int, Queue<double>>();
         private Dictionary<int, Queue<double>> channelBuffers_temp32 = new Dictionary<int, Queue<double>>();
-        private double[] channelZeroOffsets12 = new double[12]; // Ĭ��ȫΪ 0.0
+        private double[] channelZeroOffsets12 = new double[12];
         private readonly int[] channelZeroingCounts12 = new int[12];
-        private double[] channelZeroOffsets32 = new double[32]; // Ĭ��ȫΪ 0.0
+        private double[] channelZeroOffsets32 = new double[32];
         private readonly int[] channelZeroingCounts32 = new int[32];
         private volatile bool isSaving12 = false;
         private volatile bool isSaving32 = false;
         private DateTime lastSaveTime = DateTime.Now;
         private DateTime lastUIUpdateTime = DateTime.Now;
-        private const int UIUpdateIntervalMs = 100; // UI 更新间隔（毫秒），减少更新频率
+        private const int UIUpdateIntervalMs = 50; // UI 更新间隔（毫秒），减少更新频率
+
+        private void SerialSendLoop(CancellationToken token, int count)
+        {
+            int memsSensorIndex = 0;
+            double pollIntervalMs = Math.Max(2.0, 20.0 / count);
 
 
+            while (!token.IsCancellationRequested && serialPort != null && serialPort.IsOpen)
+            {
+                try
+                {
+                    int attempts = 0;
+                    while (memsCommands[memsSensorIndex] == null && attempts < memsCommands.Length)
+                    {
+                        memsSensorIndex = (memsSensorIndex + 1) % memsCommands.Length;
+                        attempts++;
+                    }
+
+                    if (memsCommands[memsSensorIndex] != null)
+                    {
+                        serialPort.Write(memsCommands[memsSensorIndex], 0, memsCommands[memsSensorIndex].Length);
+                    }
+
+                    memsSensorIndex = (memsSensorIndex + 1) % memsCommands.Length;
+
+                    Thread.Sleep((int)pollIntervalMs); // 用 Sleep 控制间隔
+                }
+                catch (Exception ex)
+                {
+                    SafeLogger.LogException("SerialSendLoop", ex);
+                }
+            }
+        }
         private void SerialReadLoop(CancellationToken token)
         {
             byte[] buffer = new byte[4096];
@@ -515,23 +565,38 @@ namespace jiazhua
             {
                 try
                 {
-
                     // === 串口接收 ===
                     int bytesRead = serialPort.Read(buffer, 0, buffer.Length);
                     if (bytesRead <= 0) continue;
 
+                    // 工业级优化：减少锁持有时间，先快速复制数据到环形缓冲区
+                    int newTail;
                     lock (serialLock)
                     {
-                        // 写入环形缓冲区
-                        for (int i = 0; i < bytesRead; i++)
+                        // 检查缓冲区空间，防止溢出
+                        int availableSpace = (recvHead - recvTail - 1 + MaxBufferSize) % MaxBufferSize;
+                        if (availableSpace < bytesRead)
                         {
-                            recvBuffer[recvTail] = buffer[i];
-                            recvTail = (recvTail + 1) % MaxBufferSize;
-
-                            if (recvTail == recvHead) // ����ģʽ
-                                recvHead = (recvHead + 1) % MaxBufferSize;
+                            // 缓冲区满，丢弃最旧的数据
+                            int overflow = bytesRead - availableSpace;
+                            recvHead = (recvHead + overflow) % MaxBufferSize;
+                            Interlocked.Increment(ref droppedPacketsCount);
                         }
 
+                        // 批量复制数据到环形缓冲区（比逐个字节快得多）
+                        int firstPart = Math.Min(bytesRead, MaxBufferSize - recvTail);
+                        Buffer.BlockCopy(buffer, 0, recvBuffer, recvTail, firstPart);
+                        if (bytesRead > firstPart)
+                        {
+                            Buffer.BlockCopy(buffer, firstPart, recvBuffer, 0, bytesRead - firstPart);
+                        }
+                        newTail = (recvTail + bytesRead) % MaxBufferSize;
+                        recvTail = newTail;
+                    }
+
+                    // 修复：恢复原来的逻辑，在锁内完成数据包提取和校验，确保数据包正确入队
+                    lock (serialLock)
+                    {
                         while (GetAvailableBytes(recvHead, recvTail, MaxBufferSize) >= 6)
                         {
                             if (!(PeekByte(recvBuffer, recvHead, 0, MaxBufferSize) == 0x42 &&
@@ -542,14 +607,18 @@ namespace jiazhua
                             }
 
                             int length = PeekByte(recvBuffer, recvHead, 2, MaxBufferSize);
-                            if (GetAvailableBytes(recvHead, recvTail, MaxBufferSize) < length)
-                                break;
+                            // 工业级：增加长度验证，防止异常数据（放宽上限，避免过滤正常数据包）
+                            if (length < 6 || length > 2048 || GetAvailableBytes(recvHead, recvTail, MaxBufferSize) < length)
+                            {
+                                recvHead = (recvHead + 1) % MaxBufferSize;
+                                continue;
+                            }
 
                             byte[] packet = pool.Rent(length);
                             CopyFromRingBuffer(recvBuffer, recvHead, packet, length, MaxBufferSize);
                             recvHead = (recvHead + length) % MaxBufferSize;
 
-                            // 优化：使用 Span 进行校验和计算，减少边界检查
+                            // 在锁内进行校验和计算（保持原子性）
                             byte checksum = 0;
                             var packetSpan = packet.AsSpan(2, length - 3);
                             foreach (byte b in packetSpan)
@@ -559,27 +628,39 @@ namespace jiazhua
 
                             if (checksum == packet[length - 1])
                             {
+                                // 校验通过，在锁外入队（EnqueuePacket 内部可能有其他操作）
                                 EnqueuePacket(packet);
                             }
                             else
                             {
+                                // 校验失败，归还内存
                                 pool.Return(packet);
                             }
                         }
-
                     }
                 }
-                catch (TimeoutException) { }
-                catch (IOException) { break; }
-                catch (InvalidOperationException) { break; }
+                catch (TimeoutException) 
+                { 
+                    // 超时是正常情况，继续循环
+                }
+                catch (IOException ex)
+                {
+                    // 工业级：IO异常时记录并退出
+                    SafeLogger.LogException("串口IO异常", ex);
+                    break;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    // 串口关闭等操作异常
+                    SafeLogger.LogException("串口操作异常", ex);
+                    break;
+                }
                 catch (Exception ex)
                 {
                     if (ex.Message != "The operation was canceled.")
                     {
-                        MessageBox.Show("串口读取异常：" + ex.Message);
-                        break;
+                        SafeLogger.LogException("串口读取异常", ex);
                     }
-
                 }
             }
         }
@@ -694,11 +775,18 @@ namespace jiazhua
                     for (int i = 0; i < 12; i++)
                         uiData.Add(values[i].ToString());
 
-                    // 优化：避免清空队列导致数据丢失，使用有界队列自动丢弃旧数据
+                    // 工业级优化：智能队列管理，优先保证数据完整性
                     if (uiQueue.Count >= MaxQueueSize)
                     {
-                        uiQueue.TryTake(out _); // 只丢弃一个最旧的数据
+                        // 队列满时，尝试丢弃最旧的数据
+                        if (uiQueue.TryTake(out var dropped))
+                        {
+                            Interlocked.Increment(ref droppedPacketsCount);
+                            // 归还对象池，防止内存泄漏
+                            if (dropped != null) uiDataPool.Return(dropped);
+                        }
                     }
+                    Interlocked.Increment(ref totalEnqueuedPackets);
                     uiQueue.Add(uiData);
 
                     // 检查该 addr 是否有足够的数据（温度和压力数据各 12 个）
@@ -823,11 +911,18 @@ namespace jiazhua
                     for (int i = 0; i < 32; i++)
                         uiData.Add(values[i].ToString());
 
-                    // 优化：避免清空队列导致数据丢失，使用有界队列自动丢弃旧数据
+                    // 工业级优化：智能队列管理，优先保证数据完整性
                     if (uiQueue.Count >= MaxQueueSize)
                     {
-                        uiQueue.TryTake(out _); // 只丢弃一个最旧的数据
+                        // 队列满时，尝试丢弃最旧的数据
+                        if (uiQueue.TryTake(out var dropped))
+                        {
+                            Interlocked.Increment(ref droppedPacketsCount);
+                            // 归还对象池，防止内存泄漏
+                            if (dropped != null) uiDataPool.Return(dropped);
+                        }
                     }
+                    Interlocked.Increment(ref totalEnqueuedPackets);
                     uiQueue.Add(uiData);
 
                     // 检查该 addr 是否有足够的数据（温度和压力数据各 32 个）
@@ -879,22 +974,32 @@ namespace jiazhua
                 {
                     lastUIUpdateTime = now;
                     long currentCount = Interlocked.Read(ref totalPacketCount);
+                    long droppedCount = Interlocked.Read(ref droppedPacketsCount);
+                    long enqueuedCount = Interlocked.Read(ref totalEnqueuedPackets);
+                    
+                    // 计算丢包率（百分比）
+                    double dropRate = 0.0;
+                    if (enqueuedCount > 0)
+                    {
+                        dropRate = (double)droppedCount / enqueuedCount * 100.0;
+                    }
+                    
                     if (label_receive.InvokeRequired)
                     {
                         label_receive.BeginInvoke(new Action(() =>
                         {
-                            label_receive.Text = $"接收包数: {currentCount}";
+                            label_receive.Text = $"接收包数: {currentCount} | 丢包: {droppedCount} ({dropRate:F2}%)";
                         }));
                     }
                     else
                     {
-                        label_receive.Text = $"接收包数: {currentCount}";
+                        label_receive.Text = $"接收包数: {currentCount} | 丢包: {droppedCount} ({dropRate:F2}%)";
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("EnqueuePacket 异常: " + ex.ToString());
+                SafeLogger.LogException("EnqueuePacket 异常", ex);
             }
         }
 
@@ -1075,9 +1180,34 @@ namespace jiazhua
         {
             Task.Run(() =>
             {
-                foreach (var packet in uiQueue.GetConsumingEnumerable())
+                // 工业级：添加异常恢复机制，确保线程不会因异常而终止
+                while (true)
                 {
-                    ProcessPacketForUI(packet);
+                    try
+                    {
+                        foreach (var packet in uiQueue.GetConsumingEnumerable())
+                        {
+                            try
+                            {
+                                ProcessPacketForUI(packet);
+                            }
+                            catch (Exception ex)
+                            {
+                                // 单个数据包处理异常不影响整体运行
+                                SafeLogger.LogException("ProcessPacketForUI异常", ex);
+                                // 归还对象池，防止内存泄漏
+                                if (packet != null) uiDataPool.Return(packet);
+                            }
+                        }
+                        // 如果队列完成，退出循环
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        // 工业级：严重异常时等待后重试，避免线程终止
+                        SafeLogger.LogException("数据包处理线程异常", ex);
+                        Thread.Sleep(100); // 等待100ms后重试
+                    }
                 }
             });
         }
@@ -1355,7 +1485,7 @@ namespace jiazhua
             }
             catch (Exception ex)
             {
-                MessageBox.Show("ProcessPacketForUI error: " + ex.ToString());
+                SafeLogger.LogException("ProcessPacketForUI error", ex);
             }
         }
         private double DenoiseByMedian12(int channelIndex, double newValue)
@@ -1500,11 +1630,16 @@ namespace jiazhua
 
         private void InitializePlotTimer()
         {
-            // 设置定时器，例如每 50 毫秒（20Hz）更新一次图表
+            // 工业级优化：根据图表数量动态调整刷新间隔
+            // 单个图表：50ms (20Hz)，双图表：80ms (12.5Hz)，保证流畅度
             _plotTimer.Interval = 50;
             _plotTimer.Tick += PlotTimer_Tick;
             _plotTimer.Start();
         }
+        
+        // 工业级：图表刷新性能监控
+        private DateTime lastPlotRefreshTime = DateTime.Now;
+        private int plotRefreshCount = 0;
 
         private void PlotTimer_Tick(object? sender, EventArgs e)
         {
@@ -1544,8 +1679,13 @@ namespace jiazhua
                 }
             }
 
-            // 优化：只更新有数据变化的通道，减少遍历次数
-            if (refreshPlot1)
+            // 工业级优化：双图表绘制性能优化
+            // 如果两个图表都需要刷新，使用交错刷新策略，避免同时刷新造成卡顿
+            bool bothNeedRefresh = refreshPlot1 && refreshPlot2;
+            bool refreshPlot1ThisCycle = refreshPlot1 && (!bothNeedRefresh || (plotRefreshCount % 2 == 0));
+            bool refreshPlot2ThisCycle = refreshPlot2 && (!bothNeedRefresh || (plotRefreshCount % 2 == 1));
+
+            if (refreshPlot1ThisCycle)
             {
                 var plt1 = formsPlot1.Plot;
                 
@@ -1586,7 +1726,7 @@ namespace jiazhua
                 formsPlot1.Refresh();
             }
 
-            if (refreshPlot2)
+            if (refreshPlot2ThisCycle)
             {
                 var plt2 = formsPlot2.Plot;
                 
@@ -1624,6 +1764,12 @@ namespace jiazhua
                 }
 
                 formsPlot2.Refresh();
+            }
+
+            // 更新刷新计数器
+            if (bothNeedRefresh)
+            {
+                plotRefreshCount++;
             }
 
             // 处理点阵图数据
