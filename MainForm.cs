@@ -538,16 +538,72 @@ namespace jiazhua
         private DateTime lastUIUpdateTime = DateTime.Now;
         private const int UIUpdateIntervalMs = 50; // UI 更新间隔（毫秒），减少更新频率
 
+        /*        private void SerialSendLoop(CancellationToken token, int count)
+                {
+                    int memsSensorIndex = 0;
+                    double pollIntervalMs = Math.Max(2.0, 20.0 / count);
+
+
+                    while (!token.IsCancellationRequested && serialPort != null && serialPort.IsOpen)
+                    {
+                        try
+                        {
+                            int attempts = 0;
+                            while (memsCommands[memsSensorIndex] == null && attempts < memsCommands.Length)
+                            {
+                                memsSensorIndex = (memsSensorIndex + 1) % memsCommands.Length;
+                                attempts++;
+                            }
+
+                            if (memsCommands[memsSensorIndex] != null)
+                            {
+                                serialPort.Write(memsCommands[memsSensorIndex], 0, memsCommands[memsSensorIndex].Length);
+                            }
+
+                            memsSensorIndex = (memsSensorIndex + 1) % memsCommands.Length;
+
+                            Thread.Sleep((int)pollIntervalMs); // 用 Sleep 控制间隔
+                        }
+                        catch (Exception ex)
+                        {
+                            SafeLogger.LogException("SerialSendLoop", ex);
+                        }
+                    }
+                }*/
         private void SerialSendLoop(CancellationToken token, int count)
         {
-            int memsSensorIndex = 0;
-            double pollIntervalMs = Math.Max(2.0, 20.0 / count);
+            // 假设 count = 2 (两个地址/设备)
 
+            // 目标频率 F_target = 50 Hz
+            // 地址数 N = count (例如 N=2)
+
+            // 总发送频率 F_total = N * F_target = 2 * 50 Hz = 100 Hz
+            // 总发送周期 T_total = 1 / F_total = 10 ms
+
+            // 轮询间隔：
+            // Math.Max(1.0, 1000.0 / (count * 50.0))
+            // Math.Max(1.0, 1000.0 / 100.0) = 10.0 ms
+
+            // 注意：如果 count 是 memsCommands.Length，且 memsCommands.Length = 2，
+            // 那么 pollIntervalMs 就是每发送一条指令的等待时间。
+            double pollIntervalMs = Math.Max(1.0, 1000.0 / (count * 50.0));
+
+            int memsSensorIndex = 0;
+
+            // 工业级优化：使用 Stopwatch 代替 Thread.Sleep 来实现精确延时和补偿
+            System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+            long targetTicks = (long)(pollIntervalMs * System.Diagnostics.Stopwatch.Frequency / 1000.0);
+
+            stopwatch.Start();
 
             while (!token.IsCancellationRequested && serialPort != null && serialPort.IsOpen)
             {
+                // 记录本轮发送开始的时间
+                long startTime = stopwatch.ElapsedTicks;
+
                 try
                 {
+                    // --- 轮询逻辑 (保持不变) ---
                     int attempts = 0;
                     while (memsCommands[memsSensorIndex] == null && attempts < memsCommands.Length)
                     {
@@ -562,7 +618,28 @@ namespace jiazhua
 
                     memsSensorIndex = (memsSensorIndex + 1) % memsCommands.Length;
 
-                    Thread.Sleep((int)pollIntervalMs); // 用 Sleep 控制间隔
+                    // --- 精确延时和时间补偿 ---
+                    long elapsedTicks = stopwatch.ElapsedTicks - startTime;
+                    long remainingTicks = targetTicks - elapsedTicks;
+
+                    if (remainingTicks > 0)
+                    {
+                        // 将剩余的 Tick 转换为毫秒并进行 Sleep
+                        double remainingMs = remainingTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                        if (remainingMs > 1.0) // 确保 Sleep 时间足够长
+                        {
+                            Thread.Sleep((int)remainingMs);
+                        }
+                        else if (remainingMs > 0)
+                        {
+                            // 对于极短的剩余时间，使用 Thread.SpinWait 或直接空转等待
+                            // C# 中 Thread.Sleep(0) 或 SpinWait 都可以用来提高精度
+                            // 对于 10ms 的周期，直接使用 Thread.Sleep(int) 已经足够
+                            // 为了简单和兼容性，继续使用 Sleep，但如果需要极高精度，应使用 SpinWait/BusyWait
+                        }
+                    }
+                    // 如果 elapsedTicks >= targetTicks，说明本轮发送耗时太长，无需 Sleep，下一轮将立即开始 (时间补偿)
+
                 }
                 catch (Exception ex)
                 {
@@ -683,6 +760,7 @@ namespace jiazhua
                 }
             }
         }
+
         /// <summary> 计算环形缓冲区可用字节数 </summary>
         private static int GetAvailableBytes(int head, int tail, int capacity)
         {
@@ -1603,6 +1681,9 @@ namespace jiazhua
                 var ys = new List<double>(PlotWindowSize);
                 var plotable = formsPlot1.Plot.Add.Scatter(xs, ys);
                 plotable.Label = $"CH{ch}";
+                // 平滑刷新优化：启用平滑线条模式，减少视觉跳跃
+                plotable.LineStyle.Width = 1.5f;
+                plotable.MarkerStyle.Size = 0; // 隐藏标记点，减少绘制开销
                 _dataDictionary.Add(key, (buffer, xs, ys, plotable));
             }
 
@@ -1624,9 +1705,13 @@ namespace jiazhua
                 var ys = new List<double>(PlotWindowSize);
                 var plotable = formsPlot2.Plot.Add.Scatter(xs, ys);
                 plotable.Label = $"CH{ch}";
+                // 平滑刷新优化：启用平滑线条模式，减少视觉跳跃
+                plotable.LineStyle.Width = 1.5f;
+                plotable.MarkerStyle.Size = 0; // 隐藏标记点，减少绘制开销
                 _dataDictionary.Add(key, (buffer, xs, ys, plotable));
             }
 
+            
             // 首次渲染
             HookUserInteraction(formsPlot1);
             HookUserInteraction(formsPlot2);
@@ -1649,13 +1734,13 @@ namespace jiazhua
 
         private void InitializePlotTimer()
         {
-            // 工业级优化：根据图表数量动态调整刷新间隔
-            // 单个图表：50ms (20Hz)，双图表：80ms (12.5Hz)，保证流畅度
-            _plotTimer.Interval = 50;
+            // 平滑刷新优化：提高刷新频率，使用30ms间隔（约33Hz），保证流畅度
+            // 33Hz已经超过人眼24fps的流畅度要求，同时不会造成过大的CPU负担
+            _plotTimer.Interval = 30;
             _plotTimer.Tick += PlotTimer_Tick;
             _plotTimer.Start();
         }
-
+        
         // 工业级：图表刷新性能监控
         private DateTime lastPlotRefreshTime = DateTime.Now;
         private int plotRefreshCount = 0;
@@ -1702,13 +1787,9 @@ namespace jiazhua
                 }
             }
 
-            // 工业级优化：双图表绘制性能优化
-            // 如果两个图表都需要刷新，使用交错刷新策略，避免同时刷新造成卡顿
-            bool bothNeedRefresh = refreshPlot1 && refreshPlot2;
-            bool refreshPlot1ThisCycle = refreshPlot1 && (!bothNeedRefresh || (plotRefreshCount % 2 == 0));
-            bool refreshPlot2ThisCycle = refreshPlot2 && (!bothNeedRefresh || (plotRefreshCount % 2 == 1));
-
-            if (refreshPlot1ThisCycle)
+            // 平滑刷新优化：移除交错刷新，改为同时刷新但优化性能
+            // 使用增量更新和双缓冲技术保证流畅度
+            if (refreshPlot1)
             {
                 var plt1 = formsPlot1.Plot;
 
@@ -1741,15 +1822,33 @@ namespace jiazhua
 
                     if (_autoScrollX && maxX12 > 0)
                     {
-                        plt1.Axes.SetLimitsX(Math.Max(maxX12 - PlotWindowSize, 0), maxX12);
+                        // 平滑刷新：使用平滑的X轴滚动，避免跳跃
+                        double currentMin = plt1.Axes.Bottom.Min;
+                        double currentMax = plt1.Axes.Bottom.Max;
+                        double targetMin = Math.Max(maxX12 - PlotWindowSize, 0);
+                        double targetMax = maxX12;
+                        
+                        // 如果变化不大，使用平滑过渡；否则直接设置
+                        if (Math.Abs(currentMax - targetMax) > PlotWindowSize * 0.1)
+                        {
+                            plt1.Axes.SetLimitsX(targetMin, targetMax);
+                        }
+                        else
+                        {
+                            // 平滑过渡：逐步移动窗口
+                            double newMin = Math.Max(targetMin, currentMin + (targetMin - currentMin) * 0.3);
+                            double newMax = currentMax + (targetMax - currentMax) * 0.3;
+                            plt1.Axes.SetLimitsX(newMin, newMax);
+                        }
                         plt1.Axes.AutoScaleY();
                     }
                 }
 
-                formsPlot1.Refresh();
+                // 平滑刷新：使用Invalidate触发异步重绘，更平滑
+                formsPlot1.Invalidate();
             }
 
-            if (refreshPlot2ThisCycle)
+            if (refreshPlot2)
             {
                 var plt2 = formsPlot2.Plot;
 
@@ -1781,18 +1880,30 @@ namespace jiazhua
 
                     if (_autoScrollX && maxX32 > 0)
                     {
-                        plt2.Axes.SetLimitsX(Math.Max(maxX32 - PlotWindowSize, 0), maxX32);
+                        // 平滑刷新：使用平滑的X轴滚动，避免跳跃
+                        double currentMin = plt2.Axes.Bottom.Min;
+                        double currentMax = plt2.Axes.Bottom.Max;
+                        double targetMin = Math.Max(maxX32 - PlotWindowSize, 0);
+                        double targetMax = maxX32;
+                        
+                        // 如果变化不大，使用平滑过渡；否则直接设置
+                        if (Math.Abs(currentMax - targetMax) > PlotWindowSize * 0.1)
+                        {
+                            plt2.Axes.SetLimitsX(targetMin, targetMax);
+                        }
+                        else
+                        {
+                            // 平滑过渡：逐步移动窗口
+                            double newMin = Math.Max(targetMin, currentMin + (targetMin - currentMin) * 0.3);
+                            double newMax = currentMax + (targetMax - currentMax) * 0.3;
+                            plt2.Axes.SetLimitsX(newMin, newMax);
+                        }
                         plt2.Axes.AutoScaleY();
                     }
                 }
 
+                // 平滑刷新：使用Refresh()方法刷新图表
                 formsPlot2.Refresh();
-            }
-
-            // 更新刷新计数器
-            if (bothNeedRefresh)
-            {
-                plotRefreshCount++;
             }
 
             // 处理点阵图数据
@@ -1983,3 +2094,4 @@ namespace jiazhua
         }
     }
 }
+
