@@ -497,6 +497,8 @@ namespace jiazhua
         private volatile bool isSaving12 = false;
         private volatile bool isSaving32 = false;
         private DateTime lastSaveTime = DateTime.Now;
+        private DateTime lastUIUpdateTime = DateTime.Now;
+        private const int UIUpdateIntervalMs = 100; // UI 更新间隔（毫秒），减少更新频率
 
 
         private void SerialReadLoop(CancellationToken token)
@@ -547,10 +549,13 @@ namespace jiazhua
                             CopyFromRingBuffer(recvBuffer, recvHead, packet, length, MaxBufferSize);
                             recvHead = (recvHead + length) % MaxBufferSize;
 
-                            // 校验
+                            // 优化：使用 Span 进行校验和计算，减少边界检查
                             byte checksum = 0;
-                            for (int i = 2; i < length - 1; i++)
-                                checksum += packet[i];
+                            var packetSpan = packet.AsSpan(2, length - 3);
+                            foreach (byte b in packetSpan)
+                            {
+                                checksum += b;
+                            }
 
                             if (checksum == packet[length - 1])
                             {
@@ -629,16 +634,13 @@ namespace jiazhua
                             values[11 - i] = v / 10;
                         }
 
-                        // 将温度数据添加到字典
-                        if (!addrDataDict12.ContainsKey(addr))
-                        {
-                            addrDataDict12[addr] = new SensorData();
-                        }
+                        // 优化：使用 GetOrAdd 减少字典查找次数
+                        var sensorData12 = addrDataDict12.GetOrAdd(addr, _ => new SensorData());
 
                         // 只添加新的数据，避免多次添加
-                        if (addrDataDict12[addr].TemperatureData.Count < 12)
+                        if (sensorData12.TemperatureData.Count < 12)
                         {
-                            var tempList = addrDataDict12[addr].TemperatureData;
+                            var tempList = sensorData12.TemperatureData;
                             for (int i = 0; i < 12; i++)
                             {
                                 tempList.Add(values[i]);
@@ -664,16 +666,13 @@ namespace jiazhua
                             values[11 - i] = v;
                         }
 
-                        // 将压力数据添加到字典
-                        if (!addrDataDict12.ContainsKey(addr))
-                        {
-                            addrDataDict12[addr] = new SensorData();
-                        }
+                        // 优化：使用 GetOrAdd 减少字典查找次数
+                        var sensorData12_pres = addrDataDict12.GetOrAdd(addr, _ => new SensorData());
 
                         // 只添加新的数据，避免多次添加
-                        if (addrDataDict12[addr].PressureData.Count < 12)
+                        if (sensorData12_pres.PressureData.Count < 12)
                         {
-                            var presList = addrDataDict12[addr].PressureData;
+                            var presList = sensorData12_pres.PressureData;
                             for (int i = 0; i < 12; i++)
                             {
                                 presList.Add(values[i]);
@@ -695,11 +694,16 @@ namespace jiazhua
                     for (int i = 0; i < 12; i++)
                         uiData.Add(values[i].ToString());
 
-                    while (uiQueue.Count > 0) uiQueue.TryTake(out _);
+                    // 优化：避免清空队列导致数据丢失，使用有界队列自动丢弃旧数据
+                    if (uiQueue.Count >= MaxQueueSize)
+                    {
+                        uiQueue.TryTake(out _); // 只丢弃一个最旧的数据
+                    }
                     uiQueue.Add(uiData);
 
                     // 检查该 addr 是否有足够的数据（温度和压力数据各 12 个）
-                    if (addrDataDict12[addr].TemperatureData.Count >= 12 && addrDataDict12[addr].PressureData.Count >= 12)
+                    var finalData12 = addrDataDict12.GetOrAdd(addr, _ => new SensorData());
+                    if (finalData12.TemperatureData.Count >= 12 && finalData12.PressureData.Count >= 12)
                     {
                         // 当数据满足条件时，加入 fileRawQueue
                         var fileData = uiDataPool.Rent();
@@ -709,14 +713,14 @@ namespace jiazhua
                         // 将温度数据和压力数据一起添加到 uiData
                         for (int i = 0; i < 12; i++)
                         {
-                            double rawV = addrDataDict12[addr].TemperatureData[i];
+                            double rawV = finalData12.TemperatureData[i];
                             int channelIndex = i;
                             double filedV = DenoiseByMedian_temp12(channelIndex, rawV);
                             fileData.Add(filedV.ToString("F2"));
                         }
                         for (int i = 0; i < 12; i++)
                         {
-                            double rawV = addrDataDict12[addr].PressureData[i];
+                            double rawV = finalData12.PressureData[i];
                             int channelIndex = i;
                             double zeroedV = rawV - channelZeroOffsets12[channelIndex];
                             double filedV = DenoiseByMedian_filedata12(channelIndex, zeroedV);
@@ -725,10 +729,10 @@ namespace jiazhua
                         if (isSaving12)
                         {
                             // 保存数据到 fileRawQueue
-                            var now = HighResDateTime.Now;
-                            if ((now - lastSaveTime).TotalMilliseconds >= saveRate)
+                            var nowT = HighResDateTime.Now;
+                            if ((nowT - lastSaveTime).TotalMilliseconds >= saveRate)
                             {
-                                lastSaveTime = now;
+                                lastSaveTime = nowT;
                                 if (fileRawQueue.Count >= 20000) fileRawQueue.TryTake(out _);
                                 fileRawQueue.Add(fileData);
                             }
@@ -737,18 +741,7 @@ namespace jiazhua
                         addrDataDict12[addr] = new SensorData();
                     }
 
-                    long newCount = Interlocked.Increment(ref totalPacketCount);
-                    if (label_receive.InvokeRequired)
-                    {
-                        label_receive.BeginInvoke(new Action(() =>
-                        {
-                            label_receive.Text = $"接收包数: {newCount}";
-                        }));
-                    }
-                    else
-                    {
-                        label_receive.Text = $"接收包数: {newCount}";
-                    }
+                    Interlocked.Increment(ref totalPacketCount);
                 }
 
                 if (addr == 2)
@@ -768,16 +761,13 @@ namespace jiazhua
                             values[31 - i] = v / 10;
                         }
 
-                        // 将温度数据添加到字典
-                        if (!addrDataDict32.ContainsKey(addr))
-                        {
-                            addrDataDict32[addr] = new SensorData();
-                        }
+                        // 优化：使用 GetOrAdd 减少字典查找次数
+                        var sensorData32 = addrDataDict32.GetOrAdd(addr, _ => new SensorData());
 
                         // 只添加新的数据，避免多次添加
-                        if (addrDataDict32[addr].TemperatureData.Count < 32)
+                        if (sensorData32.TemperatureData.Count < 32)
                         {
-                            var tempList = addrDataDict32[addr].TemperatureData;
+                            var tempList = sensorData32.TemperatureData;
                             for (int i = 0; i < 32; i++)
                             {
                                 tempList.Add(values[i]);
@@ -804,16 +794,13 @@ namespace jiazhua
                             values[31 - i] = v;
                         }
 
-                        // 将压力数据添加到字典
-                        if (!addrDataDict32.ContainsKey(addr))
-                        {
-                            addrDataDict32[addr] = new SensorData();
-                        }
+                        // 优化：使用 GetOrAdd 减少字典查找次数
+                        var sensorData32_pres = addrDataDict32.GetOrAdd(addr, _ => new SensorData());
 
                         // 只添加新的数据，避免多次添加
-                        if (addrDataDict32[addr].PressureData.Count < 32)
+                        if (sensorData32_pres.PressureData.Count < 32)
                         {
-                            var presList = addrDataDict32[addr].PressureData;
+                            var presList = sensorData32_pres.PressureData;
                             for (int i = 0; i < 32; i++)
                             {
                                 presList.Add(values[i]);
@@ -836,11 +823,16 @@ namespace jiazhua
                     for (int i = 0; i < 32; i++)
                         uiData.Add(values[i].ToString());
 
-                    while (uiQueue.Count > 0) uiQueue.TryTake(out _);
+                    // 优化：避免清空队列导致数据丢失，使用有界队列自动丢弃旧数据
+                    if (uiQueue.Count >= MaxQueueSize)
+                    {
+                        uiQueue.TryTake(out _); // 只丢弃一个最旧的数据
+                    }
                     uiQueue.Add(uiData);
 
                     // 检查该 addr 是否有足够的数据（温度和压力数据各 32 个）
-                    if (addrDataDict32[addr].TemperatureData.Count >= 32 && addrDataDict32[addr].PressureData.Count >= 32)
+                    var finalData32 = addrDataDict32.GetOrAdd(addr, _ => new SensorData());
+                    if (finalData32.TemperatureData.Count >= 32 && finalData32.PressureData.Count >= 32)
                     {
                         // 当数据满足条件时，加入 fileRawQueue
                         var fileData = uiDataPool.Rent();
@@ -850,14 +842,14 @@ namespace jiazhua
                         // 将温度数据和压力数据一起添加到 uiData
                         for (int i = 0; i < 32; i++)
                         {
-                            double rawV = addrDataDict32[addr].TemperatureData[i];
+                            double rawV = finalData32.TemperatureData[i];
                             int channelIndex = i;
                             double filedV = DenoiseByMedian_temp32(channelIndex, rawV);
                             fileData.Add(filedV.ToString("F2"));
                         }
                         for (int i = 0; i < 32; i++)
                         {
-                            double rawV = addrDataDict32[addr].PressureData[i];
+                            double rawV = finalData32.PressureData[i];
                             int channelIndex = i;
                             double zeroedV = rawV - channelZeroOffsets32[channelIndex];
                             double filedV = DenoiseByMedian_filedata32(channelIndex, zeroedV);
@@ -866,10 +858,10 @@ namespace jiazhua
                         if (isSaving32)
                         {
                             // 保存数据到 fileRawQueue
-                            var now = HighResDateTime.Now;
-                            if ((now - lastSaveTime).TotalMilliseconds >= saveRate)
+                            var nowT = HighResDateTime.Now;
+                            if ((nowT - lastSaveTime).TotalMilliseconds >= saveRate)
                             {
-                                lastSaveTime = now;
+                                lastSaveTime = nowT;
                                 if (fileRawQueue.Count >= 20000) fileRawQueue.TryTake(out _);
                                 fileRawQueue.Add(fileData);
                             }
@@ -878,17 +870,25 @@ namespace jiazhua
                         addrDataDict32[addr] = new SensorData();
                     }
 
-                    long newCount = Interlocked.Increment(ref totalPacketCount);
+                    Interlocked.Increment(ref totalPacketCount);
+                }
+
+                // 优化：限流 UI 更新，减少不必要的界面刷新
+                var now = DateTime.Now;
+                if ((now - lastUIUpdateTime).TotalMilliseconds >= UIUpdateIntervalMs)
+                {
+                    lastUIUpdateTime = now;
+                    long currentCount = Interlocked.Read(ref totalPacketCount);
                     if (label_receive.InvokeRequired)
                     {
                         label_receive.BeginInvoke(new Action(() =>
                         {
-                            label_receive.Text = $"接收包数: {newCount}";
+                            label_receive.Text = $"接收包数: {currentCount}";
                         }));
                     }
                     else
                     {
-                        label_receive.Text = $"接收包数: {newCount}";
+                        label_receive.Text = $"接收包数: {currentCount}";
                     }
                 }
             }
@@ -1053,6 +1053,17 @@ namespace jiazhua
             public int SensorIndex;
             public double[] PressureValues;
             public double[] TempValues;
+
+            // 创建深拷贝
+            public DotMatrixUpdate Clone()
+            {
+                return new DotMatrixUpdate
+                {
+                    SensorIndex = this.SensorIndex,
+                    PressureValues = this.PressureValues != null ? (double[])this.PressureValues.Clone() : null,
+                    TempValues = this.TempValues != null ? (double[])this.TempValues.Clone() : null
+                };
+            }
         }
         // 存储解析后的曲线更新数据
         private ConcurrentQueue<GraphUpdate> graphQueue = new ConcurrentQueue<GraphUpdate>();
@@ -1193,15 +1204,16 @@ namespace jiazhua
 
                     if (diantu)
                     {
+                        // 修复：入队时创建对象的深拷贝，避免后续处理修改已入队的数据
                         if (HasNonZero(dotUpdate12.TempValues))
                         {
                             if (dotQueue_Temp.Count >= MaxQueueSize) dotQueue_Temp.TryDequeue(out _);
-                            dotQueue_Temp.Enqueue(dotUpdate12);
+                            dotQueue_Temp.Enqueue(dotUpdate12.Clone());
                         }
                         if (HasNonZero(dotUpdate12.PressureValues))
                         {
                             if (dotQueue_Pres.Count >= MaxQueueSize) dotQueue_Pres.TryDequeue(out _);
-                            dotQueue_Pres.Enqueue(dotUpdate12);
+                            dotQueue_Pres.Enqueue(dotUpdate12.Clone());
                         }
                     }
 
@@ -1324,15 +1336,16 @@ namespace jiazhua
 
                     if (diantu)
                     {
+                        // 修复：入队时创建对象的深拷贝，避免后续处理修改已入队的数据
                         if (HasNonZero(dotUpdate32.TempValues))
                         {
                             if (dotQueue_Temp.Count >= MaxQueueSize) dotQueue_Temp.TryDequeue(out _);
-                            dotQueue_Temp.Enqueue(dotUpdate32);
+                            dotQueue_Temp.Enqueue(dotUpdate32.Clone());
                         }
                         if (HasNonZero(dotUpdate32.PressureValues))
                         {
                             if (dotQueue_Pres.Count >= MaxQueueSize) dotQueue_Pres.TryDequeue(out _);
-                            dotQueue_Pres.Enqueue(dotUpdate32);
+                            dotQueue_Pres.Enqueue(dotUpdate32.Clone());
                         }
                     }
 
@@ -1414,7 +1427,7 @@ namespace jiazhua
         private const int Sensor12ChannelCount = 12;
         private const int Sensor32ChannelCount = 32;
         // 统一设置绘制点数的窗口大小
-        private const int PlotWindowSize = 300;
+        private const int PlotWindowSize = 100;
         // 使用 1000 作为 Key 的乘数，确保 SensorIndex 不会冲突（12000 vs 32000）
         private const int KeyMultiplier = 1000;
 
@@ -1495,10 +1508,15 @@ namespace jiazhua
 
         private void PlotTimer_Tick(object? sender, EventArgs e)
         {
-
             // 用于记录哪些图表需要刷新
             bool refreshPlot1 = false;
             bool refreshPlot2 = false;
+            
+            // 跟踪哪些通道有更新，只更新这些通道
+            HashSet<int> updatedChannels12 = new HashSet<int>();
+            HashSet<int> updatedChannels32 = new HashSet<int>();
+            double maxX12 = 0;
+            double maxX32 = 0;
 
             // 批量提取队列中的所有数据
             while (graphQueue.TryDequeue(out var update))
@@ -1507,36 +1525,62 @@ namespace jiazhua
 
                 if (_dataDictionary.TryGetValue(key, out var data))
                 {
-                    // 1. 追加数据到缓冲区 (data.Xs, data.Ys 访问正确)
+                    // 1. 追加数据到缓冲区
                     data.Buffer.Add(update.Index, update.Pressure);
 
-                    // 2. 维持数据窗口大小（滚动显示）
-                    if (update.SensorIndex == 12) refreshPlot1 = true;
-                    else if (update.SensorIndex == 32) refreshPlot2 = true;
+                    // 2. 记录更新的通道和最大X值
+                    if (update.SensorIndex == 12)
+                    {
+                        refreshPlot1 = true;
+                        updatedChannels12.Add(update.Channel);
+                        if (update.Index > maxX12) maxX12 = update.Index;
+                    }
+                    else if (update.SensorIndex == 32)
+                    {
+                        refreshPlot2 = true;
+                        updatedChannels32.Add(update.Channel);
+                        if (update.Index > maxX32) maxX32 = update.Index;
+                    }
                 }
             }
 
-            // 4. 更新 ScottPlot 控件 (高性能追加)
-            // 只需要在数据更新后调用 Refresh()，ScottPlot 会自动重绘。
+            // 优化：只更新有数据变化的通道，减少遍历次数
             if (refreshPlot1)
             {
-                foreach (var d in _dataDictionary.Where(d => d.Key / KeyMultiplier == 12))
+                var plt1 = formsPlot1.Plot;
+                
+                // 只更新有变化的通道，而不是所有通道
+                foreach (int channel in updatedChannels12)
                 {
-                    d.Value.Buffer.CopyTo(d.Value.Xs, d.Value.Ys);
+                    int key = 12 * KeyMultiplier + channel;
+                    if (_dataDictionary.TryGetValue(key, out var data))
+                    {
+                        data.Buffer.CopyTo(data.Xs, data.Ys);
+                    }
                 }
 
-                var plt1 = formsPlot1.Plot;
-
-                // 1. 计算最新的 X 轴边界
-                // 注意：这里我们使用 .Value.Xs.LastOrDefault(0) 访问数据，这是正确的。
-                var latestX = _dataDictionary
-                            .Where(d => d.Key / KeyMultiplier == 12)
-                            .Max(d => d.Value.Xs.LastOrDefault(0));
-
-                if (_autoScrollX)
+                // 优化：直接计算最大X值，避免多次LINQ查询
+                if (updatedChannels12.Count > 0)
                 {
-                    plt1.Axes.SetLimitsX(Math.Max(latestX - PlotWindowSize, 0), latestX);
-                    plt1.Axes.AutoScaleY();
+                    // 如果已从更新中获取了maxX12，直接使用；否则遍历查找
+                    if (maxX12 == 0)
+                    {
+                        foreach (int channel in updatedChannels12)
+                        {
+                            int key = 12 * KeyMultiplier + channel;
+                            if (_dataDictionary.TryGetValue(key, out var data) && data.Xs.Count > 0)
+                            {
+                                double lastX = data.Xs[data.Xs.Count - 1];
+                                if (lastX > maxX12) maxX12 = lastX;
+                            }
+                        }
+                    }
+
+                    if (_autoScrollX && maxX12 > 0)
+                    {
+                        plt1.Axes.SetLimitsX(Math.Max(maxX12 - PlotWindowSize, 0), maxX12);
+                        plt1.Axes.AutoScaleY();
+                    }
                 }
 
                 formsPlot1.Refresh();
@@ -1544,25 +1588,45 @@ namespace jiazhua
 
             if (refreshPlot2)
             {
-                foreach (var d in _dataDictionary.Where(d => d.Key / KeyMultiplier == 32))
+                var plt2 = formsPlot2.Plot;
+                
+                // 只更新有变化的通道
+                foreach (int channel in updatedChannels32)
                 {
-                    d.Value.Buffer.CopyTo(d.Value.Xs, d.Value.Ys);
+                    int key = 32 * KeyMultiplier + channel;
+                    if (_dataDictionary.TryGetValue(key, out var data))
+                    {
+                        data.Buffer.CopyTo(data.Xs, data.Ys);
+                    }
                 }
 
-                var plt2 = formsPlot2.Plot;
-                var latestX = _dataDictionary
-                            .Where(d => d.Key / KeyMultiplier == 32)
-                            .Max(d => d.Value.Xs.LastOrDefault(0));
-
-                if (_autoScrollX)
+                // 优化：直接计算最大X值
+                if (updatedChannels32.Count > 0)
                 {
-                    plt2.Axes.SetLimitsX(Math.Max(latestX - PlotWindowSize, 0), latestX);
-                    plt2.Axes.AutoScaleY();
+                    if (maxX32 == 0)
+                    {
+                        foreach (int channel in updatedChannels32)
+                        {
+                            int key = 32 * KeyMultiplier + channel;
+                            if (_dataDictionary.TryGetValue(key, out var data) && data.Xs.Count > 0)
+                            {
+                                double lastX = data.Xs[data.Xs.Count - 1];
+                                if (lastX > maxX32) maxX32 = lastX;
+                            }
+                        }
+                    }
+
+                    if (_autoScrollX && maxX32 > 0)
+                    {
+                        plt2.Axes.SetLimitsX(Math.Max(maxX32 - PlotWindowSize, 0), maxX32);
+                        plt2.Axes.AutoScaleY();
+                    }
                 }
 
                 formsPlot2.Refresh();
             }
 
+            // 处理点阵图数据
             while (dotQueue_Pres.TryDequeue(out var update))
             {
                 if (update.SensorIndex == 12)
@@ -1666,19 +1730,31 @@ namespace jiazhua
                     _count++;
             }
 
-            /// <summary>
-            /// ����Ϊ��ʱ��˳�򡱵��������飨ֻ��ˢ��ʱ������
-            /// </summary>
             public void CopyTo(List<double> xs, List<double> ys)
             {
+                if (_count == 0)
+                {
+                    xs.Clear();
+                    ys.Clear();
+                    return;
+                }
+
+                // 优化：预分配容量，减少内存重新分配
+                if (xs.Capacity < _count)
+                {
+                    xs.Capacity = _count;
+                }
+                if (ys.Capacity < _count)
+                {
+                    ys.Capacity = _count;
+                }
+
                 xs.Clear();
                 ys.Clear();
 
-                if (_count == 0)
-                    return;
-
                 int start = (_writeIndex - _count + Capacity) % Capacity;
 
+                // 优化：直接添加，避免多次扩容
                 for (int i = 0; i < _count; i++)
                 {
                     int idx = (start + i) % Capacity;
