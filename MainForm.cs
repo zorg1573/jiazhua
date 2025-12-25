@@ -1643,6 +1643,10 @@ namespace jiazhua
 
         private void PlotTimer_Tick(object? sender, EventArgs e)
         {
+/*            doubleBufferedPanelCloud12.Values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+            doubleBufferedPanelCloud12.Invalidate();
+            doubleBufferedPanelCloud32.Values = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32];
+            doubleBufferedPanelCloud32.Invalidate();*/
             // 用于记录哪些图表需要刷新
             bool refreshPlot1 = false;
             bool refreshPlot2 = false;
