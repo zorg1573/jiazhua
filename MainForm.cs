@@ -261,7 +261,6 @@ namespace jiazhua
                 //serialPort.Close();
                 CloseSerialPort();
 
-                // ��� flush & close
                 packetWriter?.Flush();
                 packetWriter?.Close();
                 packetWriter = null;
@@ -305,7 +304,7 @@ namespace jiazhua
 
                 packetWriter.WriteLine(string.Join(",", biaoTouName));
 
-                packetWriter.AutoFlush = true; // ÿ��д���Զ�ˢ��
+                packetWriter.AutoFlush = true;
 
                 StartWorkers();
             }
@@ -382,7 +381,7 @@ namespace jiazhua
                         // UI 更新（保持你的逻辑）
                         if (label_save.InvokeRequired)
                             label_save.BeginInvoke(new Action(() =>
-                                label_save.Text = $"�Ѵ����: {savedPacketCount}"));
+                                label_save.Text = $"已存包数: {savedPacketCount}"));
                         else
                             label_save.Text = $"已存包数: {savedPacketCount}";
                     }
@@ -414,7 +413,7 @@ namespace jiazhua
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERR] FormatWorker: {ex.ToString()}");
+                MessageBox.Show($"[ERR] FormatWorker: {ex.ToString()}");
             }
         }
         [ThreadStatic] private static StringBuilder _sbCache;
@@ -432,7 +431,7 @@ namespace jiazhua
             _sbCache.Append(HighResDateTime.Now.ToString("yy:MM:dd:HH:mm:ss.fff"));
 
 
-            for (int i = 0; i < 65; i++)
+            for (int i = 0; i < packet.Count; i++)
             {
                 _sbCache.Append(',');
                 _sbCache.Append(packet[i]);
@@ -495,7 +494,8 @@ namespace jiazhua
         private readonly int[] channelZeroingCounts12 = new int[12];
         private double[] channelZeroOffsets32 = new double[32]; // Ĭ��ȫΪ 0.0
         private readonly int[] channelZeroingCounts32 = new int[32];
-        private volatile bool isSaving = false;
+        private volatile bool isSaving12 = false;
+        private volatile bool isSaving32 = false;
         private DateTime lastSaveTime = DateTime.Now;
 
 
@@ -614,7 +614,7 @@ namespace jiazhua
 
                 if (addr == 1)
                 {
-                    // ��������
+                    // 复用数组
                     Span<double> values = stackalloc double[12];
 
                     int dataOffset = 13;
@@ -629,28 +629,32 @@ namespace jiazhua
                             values[11 - i] = v / 10;
                         }
 
-                        // ���¶��������ӵ��ֵ�
+                        // 将温度数据添加到字典
                         if (!addrDataDict12.ContainsKey(addr))
                         {
                             addrDataDict12[addr] = new SensorData();
                         }
 
                         // 只添加新的数据，避免多次添加
-                        if (addrDataDict12[addr].TemperatureData.Count < 8)
+                        if (addrDataDict12[addr].TemperatureData.Count < 12)
                         {
-                            addrDataDict12[addr].TemperatureData.AddRange(values.Slice(0, 12).ToArray());
+                            var tempList = addrDataDict12[addr].TemperatureData;
+                            for (int i = 0; i < 12; i++)
+                            {
+                                tempList.Add(values[i]);
+                            }
                         }
                     }
-                    // �����ѹ������ (F5)
+                    // 如果是压力数据 (F5)
                     else if (type == 0xF5)
                     {
                         for (int i = 0; i < 12; i++)
                         {
                             if (dataOffset + i * 4 + 3 >= packet.Length) break;
-                            double v = BitConverter.ToInt32(packet, dataOffset + i * 4); // ����С�˻�Э��
+                            double v = BitConverter.ToInt32(packet, dataOffset + i * 4);
                             if (guiyihua)
                             {
-                                v = v / 1000.0; // ѹ��ֵ��һ������λ kPa
+                                v = v / 1000.0; // Kpa
 
                                 // 保证最小值为 1
                                 if (v > 0 && v < 1) v = 1;
@@ -669,7 +673,11 @@ namespace jiazhua
                         // 只添加新的数据，避免多次添加
                         if (addrDataDict12[addr].PressureData.Count < 12)
                         {
-                            addrDataDict12[addr].PressureData.AddRange(values.Slice(0, 12).ToArray());
+                            var presList = addrDataDict12[addr].PressureData;
+                            for (int i = 0; i < 12; i++)
+                            {
+                                presList.Add(values[i]);
+                            }
                         }
                     }
                     else
@@ -714,7 +722,7 @@ namespace jiazhua
                             double filedV = DenoiseByMedian_filedata12(channelIndex, zeroedV);
                             fileData.Add(filedV.ToString("F3"));
                         }
-                        if (isSaving)
+                        if (isSaving12)
                         {
                             // 保存数据到 fileRawQueue
                             var now = HighResDateTime.Now;
@@ -734,12 +742,12 @@ namespace jiazhua
                     {
                         label_receive.BeginInvoke(new Action(() =>
                         {
-                            label_receive.Text = $"���հ���: {newCount}";
+                            label_receive.Text = $"接收包数: {newCount}";
                         }));
                     }
                     else
                     {
-                        label_receive.Text = $"���հ���: {newCount}";
+                        label_receive.Text = $"接收包数: {newCount}";
                     }
                 }
 
@@ -776,111 +784,111 @@ namespace jiazhua
                             }
 
                         }
-                        // 如果是压力数据 (F5)
-                        else if (type == 0xF5)
-                        {
-                            for (int i = 0; i < 32; i++)
-                            {
-                                if (dataOffset + i * 4 + 3 >= packet.Length) break;
-                                double v = BitConverter.ToInt32(packet, dataOffset + i * 4); // ����С�˻�Э��
-                                if (guiyihua)
-                                {
-                                    v = v / 1000.0; // ѹ��ֵ��һ������λ kPa
-
-                                    // 保证最小值为 1
-                                    if (v > 0 && v < 1) v = 1;
-                                    if (v < 0 && v > -1) v = -1;
-                                }
-
-                                values[31 - i] = v;
-                            }
-
-                            // 将压力数据添加到字典
-                            if (!addrDataDict32.ContainsKey(addr))
-                            {
-                                addrDataDict32[addr] = new SensorData();
-                            }
-
-                            // 只添加新的数据，避免多次添加
-                            if (addrDataDict32[addr].PressureData.Count < 32)
-                            {
-                                var presList = addrDataDict32[addr].PressureData;
-                                for (int i = 0; i < 32; i++)
-                                {
-                                    presList.Add(values[i]);
-                                }
-
-                            }
-                        }
-                        else
-                        {
-                            return;
-                        }
-
-                        lastValidPacket32 = packet;
-
-                        // 获取 List<string> 对象池
-                        var uiData = uiDataPool.Rent();
-                        uiData.Clear();
-                        uiData.Add("S32");
-                        uiData.Add(type.ToString("X2"));
+                    }
+                    // 如果是压力数据 (F5)
+                    else if (type == 0xF5)
+                    {
                         for (int i = 0; i < 32; i++)
-                            uiData.Add(values[i].ToString());
-
-                        while (uiQueue.Count > 0) uiQueue.TryTake(out _);
-                        uiQueue.Add(uiData);
-
-                        // 检查该 addr 是否有足够的数据（温度和压力数据各 32 个）
-                        if (addrDataDict32[addr].TemperatureData.Count >= 32 && addrDataDict32[addr].PressureData.Count >= 32)
                         {
-                            // 当数据满足条件时，加入 fileRawQueue
-                            var fileData = uiDataPool.Rent();
-                            fileData.Clear();
-                            fileData.Add("S32");
+                            if (dataOffset + i * 4 + 3 >= packet.Length) break;
+                            double v = BitConverter.ToInt32(packet, dataOffset + i * 4);
+                            if (guiyihua)
+                            {
+                                v = v / 1000.0; // Kpa
 
-                            // 将温度数据和压力数据一起添加到 uiData
-                            for (int i = 0; i < 32; i++)
-                            {
-                                double rawV = addrDataDict32[addr].TemperatureData[i];
-                                int channelIndex = i;
-                                double filedV = DenoiseByMedian_temp32(channelIndex, rawV);
-                                fileData.Add(filedV.ToString("F2"));
+                                // 保证最小值为 1
+                                if (v > 0 && v < 1) v = 1;
+                                if (v < 0 && v > -1) v = -1;
                             }
-                            for (int i = 0; i < 32; i++)
-                            {
-                                double rawV = addrDataDict32[addr].PressureData[i];
-                                int channelIndex = i;
-                                double zeroedV = rawV - channelZeroOffsets32[channelIndex];
-                                double filedV = DenoiseByMedian_filedata32(channelIndex, zeroedV);
-                                fileData.Add(filedV.ToString("F3"));
-                            }
-                            if (isSaving)
-                            {
-                                // 保存数据到 fileRawQueue
-                                var now = HighResDateTime.Now;
-                                if ((now - lastSaveTime).TotalMilliseconds >= saveRate)
-                                {
-                                    lastSaveTime = now;
-                                    if (fileRawQueue.Count >= 20000) fileRawQueue.TryTake(out _);
-                                    fileRawQueue.Add(fileData);
-                                }
-                            }
-                            // 清除该 addr 的数据（温度和压力都清除）
+
+                            values[31 - i] = v;
+                        }
+
+                        // 将压力数据添加到字典
+                        if (!addrDataDict32.ContainsKey(addr))
+                        {
                             addrDataDict32[addr] = new SensorData();
                         }
 
-                        long newCount = Interlocked.Increment(ref totalPacketCount);
-                        if (label_receive.InvokeRequired)
+                        // 只添加新的数据，避免多次添加
+                        if (addrDataDict32[addr].PressureData.Count < 32)
                         {
-                            label_receive.BeginInvoke(new Action(() =>
+                            var presList = addrDataDict32[addr].PressureData;
+                            for (int i = 0; i < 32; i++)
                             {
-                                label_receive.Text = $"接收包数: {newCount}";
-                            }));
+                                presList.Add(values[i]);
+                            }
+
                         }
-                        else
+                    }
+                    else
+                    {
+                        return;
+                    }
+
+                    lastValidPacket32 = packet;
+
+                    // 获取 List<string> 对象池
+                    var uiData = uiDataPool.Rent();
+                    uiData.Clear();
+                    uiData.Add("S32");
+                    uiData.Add(type.ToString("X2"));
+                    for (int i = 0; i < 32; i++)
+                        uiData.Add(values[i].ToString());
+
+                    while (uiQueue.Count > 0) uiQueue.TryTake(out _);
+                    uiQueue.Add(uiData);
+
+                    // 检查该 addr 是否有足够的数据（温度和压力数据各 32 个）
+                    if (addrDataDict32[addr].TemperatureData.Count >= 32 && addrDataDict32[addr].PressureData.Count >= 32)
+                    {
+                        // 当数据满足条件时，加入 fileRawQueue
+                        var fileData = uiDataPool.Rent();
+                        fileData.Clear();
+                        fileData.Add("S32");
+
+                        // 将温度数据和压力数据一起添加到 uiData
+                        for (int i = 0; i < 32; i++)
+                        {
+                            double rawV = addrDataDict32[addr].TemperatureData[i];
+                            int channelIndex = i;
+                            double filedV = DenoiseByMedian_temp32(channelIndex, rawV);
+                            fileData.Add(filedV.ToString("F2"));
+                        }
+                        for (int i = 0; i < 32; i++)
+                        {
+                            double rawV = addrDataDict32[addr].PressureData[i];
+                            int channelIndex = i;
+                            double zeroedV = rawV - channelZeroOffsets32[channelIndex];
+                            double filedV = DenoiseByMedian_filedata32(channelIndex, zeroedV);
+                            fileData.Add(filedV.ToString("F3"));
+                        }
+                        if (isSaving32)
+                        {
+                            // 保存数据到 fileRawQueue
+                            var now = HighResDateTime.Now;
+                            if ((now - lastSaveTime).TotalMilliseconds >= saveRate)
+                            {
+                                lastSaveTime = now;
+                                if (fileRawQueue.Count >= 20000) fileRawQueue.TryTake(out _);
+                                fileRawQueue.Add(fileData);
+                            }
+                        }
+                        // 清除该 addr 的数据（温度和压力都清除）
+                        addrDataDict32[addr] = new SensorData();
+                    }
+
+                    long newCount = Interlocked.Increment(ref totalPacketCount);
+                    if (label_receive.InvokeRequired)
+                    {
+                        label_receive.BeginInvoke(new Action(() =>
                         {
                             label_receive.Text = $"接收包数: {newCount}";
-                        }
+                        }));
+                    }
+                    else
+                    {
+                        label_receive.Text = $"接收包数: {newCount}";
                     }
                 }
             }
@@ -1023,7 +1031,8 @@ namespace jiazhua
         //private bool yuntu = true;
         int packetIndex12 = 0;
         int packetIndex32 = 0;
-        private bool isZeroing = false;
+        private bool isZeroing12 = false;
+        private bool isZeroing32 = false;
         private Dictionary<int, List<double>> pressureCalibBuffers12 = new();
         private Dictionary<int, List<double>> pressureCalibBuffers32 = new();
         private bool[] activeChannels12 = new bool[12];
@@ -1074,7 +1083,7 @@ namespace jiazhua
 
                     string type = uiData[1];
 
-                    if (isZeroing && type == "F5")
+                    if (isZeroing12 && type == "F5")
                     {
                         for (int i = 0; i < 12; i++)
                         {
@@ -1088,7 +1097,7 @@ namespace jiazhua
                             {
                                 pressureCalibBuffers12[channelIndex].Add(pressure);
                                 channelZeroingCounts12[channelIndex]++;
-                                activeChannels12[channelIndex] = true; // ��Ǹ�ͨ����Ч
+                                activeChannels12[channelIndex] = true;
                             }
                         }
 
@@ -1117,10 +1126,10 @@ namespace jiazhua
                             }
 
                             // 校零完成
-                            isZeroing = false;
-                            isSaving = true;
+                            isZeroing12 = false;
+                            isSaving12 = true;
                             Array.Clear(channelZeroingCounts12, 0, channelZeroingCounts12.Length);
-                            Array.Clear(activeChannels12, 0, activeChannels12.Length); // ��������״̬
+                            Array.Clear(activeChannels12, 0, activeChannels12.Length);
 
                             Action showMsg = () => MessageBox.Show("校零完成", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
@@ -1205,7 +1214,7 @@ namespace jiazhua
                     dotUpdate32.TempValues = new double[32];
                     string type = uiData[1];
 
-                    if (isZeroing && type == "F5")
+                    if (isZeroing32 && type == "F5")
                     {
                         for (int i = 0; i < 32; i++)
                         {
@@ -1219,7 +1228,7 @@ namespace jiazhua
                             {
                                 pressureCalibBuffers32[channelIndex].Add(pressure);
                                 channelZeroingCounts32[channelIndex]++;
-                                activeChannels32[channelIndex] = true; // ��Ǹ�ͨ����Ч
+                                activeChannels32[channelIndex] = true;
                             }
                         }
 
@@ -1248,10 +1257,10 @@ namespace jiazhua
                             }
 
                             // 校零完成
-                            isZeroing = false;
-                            isSaving = true;
+                            isZeroing32 = false;
+                            isSaving32 = true;
                             Array.Clear(channelZeroingCounts32, 0, channelZeroingCounts32.Length);
-                            Array.Clear(activeChannels32, 0, activeChannels32.Length); // ��������״̬
+                            Array.Clear(activeChannels32, 0, activeChannels32.Length);
 
                             Action showMsg = () => MessageBox.Show("校零完成", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
@@ -1707,7 +1716,8 @@ namespace jiazhua
 
         private void button4_Click(object sender, EventArgs e)
         {
-            isZeroing = true;
+            isZeroing12 = true;
+            isZeroing32 = true;
             pressureCalibBuffers12.Clear();
             pressureCalibBuffers32.Clear();
         }
