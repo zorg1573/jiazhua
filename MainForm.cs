@@ -26,6 +26,7 @@ namespace jiazhua
         {
             crownTextBox_addr12.Text = "1";
             crownTextBox_addr32.Text = "2";
+            crownTextBox_sendRate.Text = "50";
             var data = new List<object>();
 
             for (int i = 1; i <= 12; i++)
@@ -226,7 +227,11 @@ namespace jiazhua
                     MessageBox.Show("请选择串口");
                     return;
                 }
-
+                if (!checkBox_s12.Checked && !checkBox_s32.Checked)
+                {
+                    MessageBox.Show("请勾选传感器");
+                    return;
+                }
                 if (crownTextBox_addr12.Text == "" && crownTextBox_addr32.Text == "")
                 {
                     MessageBox.Show("请填写地址，S12为奇数，S32为偶数");
@@ -234,8 +239,17 @@ namespace jiazhua
                 }
                 s12addr = int.Parse(crownTextBox_addr12.Text);
                 s32addr = int.Parse(crownTextBox_addr32.Text);
-                bool isEven = (s32addr & 1) == 0; // 偶数
-                bool isOdd = (s12addr & 1) == 1; // 奇数
+                bool isEven = true;
+                bool isOdd = true;
+                if (checkBox_s12.Checked)
+                {
+                    isOdd = (s12addr & 1) == 1; // 奇数
+                }
+                if (checkBox_s32.Checked)
+                {
+                    isEven = (s32addr & 1) == 0; // 偶数
+                }
+
                 if (!isEven || !isOdd)
                 {
                     MessageBox.Show("请填写地址，S12为奇数，S32为偶数");
@@ -309,12 +323,31 @@ namespace jiazhua
                 serialPort.Open();
 
                 guiyihua = checkBox1.Checked;
-                memsCommands = new byte[2][];
-                List<int> fingerNum = [s12addr, s32addr];
+                List<int> fingerNum = new();
+
+                if (checkBox_s12.Checked)
+                {
+                    fingerNum.Add(s12addr);
+                }
+
+                if (checkBox_s32.Checked)
+                {
+                    fingerNum.Add(s32addr);
+                }
+
+                // 根据真实数量创建 memsCommands
+                memsCommands = new byte[fingerNum.Count][];
+
                 for (int i = 0; i < fingerNum.Count; i++)
                 {
-                    memsCommands[i] = new byte[] { 0x7B, 0xB7, (byte)(fingerNum[i]) };
+                    memsCommands[i] = new byte[]
+                    {
+                        0x7B,
+                        0xB7,
+                        (byte)fingerNum[i]
+                    };
                 }
+
 
                 // 启动后台读取线程
                 cts = new CancellationTokenSource();
@@ -322,7 +355,7 @@ namespace jiazhua
                 serialThread.IsBackground = true;
                 serialThread.Start();
 
-                serialSendThread = new Thread(() => SerialSendLoop(cts.Token, 2));
+                serialSendThread = new Thread(() => SerialSendLoop(cts.Token, fingerNum.Count));
                 serialSendThread.IsBackground = true;
                 serialSendThread.Start();
 
@@ -572,21 +605,12 @@ namespace jiazhua
                 }*/
         private void SerialSendLoop(CancellationToken token, int count)
         {
-            // 假设 count = 2 (两个地址/设备)
-
-            // 目标频率 F_target = 50 Hz
-            // 地址数 N = count (例如 N=2)
-
-            // 总发送频率 F_total = N * F_target = 2 * 50 Hz = 100 Hz
-            // 总发送周期 T_total = 1 / F_total = 10 ms
-
-            // 轮询间隔：
-            // Math.Max(1.0, 1000.0 / (count * 50.0))
-            // Math.Max(1.0, 1000.0 / 100.0) = 10.0 ms
-
-            // 注意：如果 count 是 memsCommands.Length，且 memsCommands.Length = 2，
-            // 那么 pollIntervalMs 就是每发送一条指令的等待时间。
-            double pollIntervalMs = Math.Max(1.0, 1000.0 / (count * 50.0));
+            double TargetHzPerSensor = 50.0;
+            if(int.TryParse(crownTextBox_sendRate.Text, out int valueR))
+            {
+                TargetHzPerSensor = valueR;
+            }
+            double pollIntervalMs = Math.Max(1.0, 1000.0 / (count * TargetHzPerSensor));
 
             int memsSensorIndex = 0;
 
@@ -1369,7 +1393,7 @@ namespace jiazhua
                             Array.Clear(channelZeroingCounts12, 0, channelZeroingCounts12.Length);
                             Array.Clear(activeChannels12, 0, activeChannels12.Length);
 
-                            Action showMsg = () => MessageBox.Show("校零完成", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show("校零完成", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                     }
 

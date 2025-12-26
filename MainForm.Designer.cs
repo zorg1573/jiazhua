@@ -32,6 +32,10 @@
             formTheme1 = new ReaLTaiizor.Forms.FormTheme();
             tableLayoutPanel1 = new TableLayoutPanel();
             cyberGroupBox1 = new ReaLTaiizor.Controls.CyberGroupBox();
+            checkBox_s32 = new CheckBox();
+            checkBox_s12 = new CheckBox();
+            crownTextBox_addr32 = new ReaLTaiizor.Controls.CrownTextBox();
+            crownTextBox_addr12 = new ReaLTaiizor.Controls.CrownTextBox();
             button4 = new ReaLTaiizor.Controls.Button();
             checkBox3 = new CheckBox();
             checkBox2 = new CheckBox();
@@ -73,10 +77,8 @@
             label_receive = new Label();
             label_port = new Label();
             nightControlBox1 = new ReaLTaiizor.Controls.NightControlBox();
-            crownTextBox_addr12 = new ReaLTaiizor.Controls.CrownTextBox();
             foreverLabel6 = new ReaLTaiizor.Controls.ForeverLabel();
-            crownTextBox_addr32 = new ReaLTaiizor.Controls.CrownTextBox();
-            foreverLabel7 = new ReaLTaiizor.Controls.ForeverLabel();
+            crownTextBox_sendRate = new ReaLTaiizor.Controls.CrownTextBox();
             formTheme1.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             cyberGroupBox1.SuspendLayout();
@@ -151,10 +153,12 @@
             cyberGroupBox1.ColorPen_1 = Color.FromArgb(37, 52, 68);
             cyberGroupBox1.ColorPen_2 = Color.FromArgb(41, 63, 86);
             tableLayoutPanel1.SetColumnSpan(cyberGroupBox1, 2);
-            cyberGroupBox1.Controls.Add(crownTextBox_addr32);
-            cyberGroupBox1.Controls.Add(foreverLabel7);
-            cyberGroupBox1.Controls.Add(crownTextBox_addr12);
+            cyberGroupBox1.Controls.Add(crownTextBox_sendRate);
             cyberGroupBox1.Controls.Add(foreverLabel6);
+            cyberGroupBox1.Controls.Add(checkBox_s32);
+            cyberGroupBox1.Controls.Add(checkBox_s12);
+            cyberGroupBox1.Controls.Add(crownTextBox_addr32);
+            cyberGroupBox1.Controls.Add(crownTextBox_addr12);
             cyberGroupBox1.Controls.Add(button4);
             cyberGroupBox1.Controls.Add(checkBox3);
             cyberGroupBox1.Controls.Add(checkBox2);
@@ -186,6 +190,50 @@
             cyberGroupBox1.Tag = "Cyber";
             cyberGroupBox1.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
             cyberGroupBox1.Timer_RGB = 300;
+            // 
+            // checkBox_s32
+            // 
+            checkBox_s32.AutoSize = true;
+            checkBox_s32.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            checkBox_s32.ForeColor = Color.LightGray;
+            checkBox_s32.Location = new Point(170, 58);
+            checkBox_s32.Name = "checkBox_s32";
+            checkBox_s32.Size = new Size(93, 23);
+            checkBox_s32.TabIndex = 19;
+            checkBox_s32.Text = "S32地址：";
+            checkBox_s32.UseVisualStyleBackColor = true;
+            // 
+            // checkBox_s12
+            // 
+            checkBox_s12.AutoSize = true;
+            checkBox_s12.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            checkBox_s12.ForeColor = Color.LightGray;
+            checkBox_s12.Location = new Point(20, 58);
+            checkBox_s12.Name = "checkBox_s12";
+            checkBox_s12.Size = new Size(93, 23);
+            checkBox_s12.TabIndex = 18;
+            checkBox_s12.Text = "S12地址：";
+            checkBox_s12.UseVisualStyleBackColor = true;
+            // 
+            // crownTextBox_addr32
+            // 
+            crownTextBox_addr32.BackColor = Color.FromArgb(45, 47, 49);
+            crownTextBox_addr32.BorderStyle = BorderStyle.FixedSingle;
+            crownTextBox_addr32.ForeColor = Color.FromArgb(220, 220, 220);
+            crownTextBox_addr32.Location = new Point(269, 61);
+            crownTextBox_addr32.Name = "crownTextBox_addr32";
+            crownTextBox_addr32.Size = new Size(43, 22);
+            crownTextBox_addr32.TabIndex = 17;
+            // 
+            // crownTextBox_addr12
+            // 
+            crownTextBox_addr12.BackColor = Color.FromArgb(45, 47, 49);
+            crownTextBox_addr12.BorderStyle = BorderStyle.FixedSingle;
+            crownTextBox_addr12.ForeColor = Color.FromArgb(220, 220, 220);
+            crownTextBox_addr12.Location = new Point(121, 61);
+            crownTextBox_addr12.Name = "crownTextBox_addr12";
+            crownTextBox_addr12.Size = new Size(43, 22);
+            crownTextBox_addr12.TabIndex = 15;
             // 
             // button4
             // 
@@ -896,49 +944,27 @@
             nightControlBox1.Size = new Size(139, 31);
             nightControlBox1.TabIndex = 0;
             // 
-            // crownTextBox_addr12
-            // 
-            crownTextBox_addr12.BackColor = Color.FromArgb(45, 47, 49);
-            crownTextBox_addr12.BorderStyle = BorderStyle.FixedSingle;
-            crownTextBox_addr12.ForeColor = Color.FromArgb(220, 220, 220);
-            crownTextBox_addr12.Location = new Point(92, 60);
-            crownTextBox_addr12.Name = "crownTextBox_addr12";
-            crownTextBox_addr12.Size = new Size(43, 22);
-            crownTextBox_addr12.TabIndex = 15;
-            // 
             // foreverLabel6
             // 
             foreverLabel6.AutoSize = true;
             foreverLabel6.BackColor = Color.Transparent;
             foreverLabel6.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
             foreverLabel6.ForeColor = Color.LightGray;
-            foreverLabel6.Location = new Point(20, 58);
+            foreverLabel6.Location = new Point(327, 59);
             foreverLabel6.Name = "foreverLabel6";
-            foreverLabel6.Size = new Size(74, 19);
-            foreverLabel6.TabIndex = 14;
-            foreverLabel6.Text = "S12地址：";
+            foreverLabel6.Size = new Size(79, 19);
+            foreverLabel6.TabIndex = 20;
+            foreverLabel6.Text = "发送速率：";
             // 
-            // crownTextBox_addr32
+            // crownTextBox_sendRate
             // 
-            crownTextBox_addr32.BackColor = Color.FromArgb(45, 47, 49);
-            crownTextBox_addr32.BorderStyle = BorderStyle.FixedSingle;
-            crownTextBox_addr32.ForeColor = Color.FromArgb(220, 220, 220);
-            crownTextBox_addr32.Location = new Point(213, 60);
-            crownTextBox_addr32.Name = "crownTextBox_addr32";
-            crownTextBox_addr32.Size = new Size(43, 22);
-            crownTextBox_addr32.TabIndex = 17;
-            // 
-            // foreverLabel7
-            // 
-            foreverLabel7.AutoSize = true;
-            foreverLabel7.BackColor = Color.Transparent;
-            foreverLabel7.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            foreverLabel7.ForeColor = Color.LightGray;
-            foreverLabel7.Location = new Point(141, 58);
-            foreverLabel7.Name = "foreverLabel7";
-            foreverLabel7.Size = new Size(74, 19);
-            foreverLabel7.TabIndex = 16;
-            foreverLabel7.Text = "S32地址：";
+            crownTextBox_sendRate.BackColor = Color.FromArgb(45, 47, 49);
+            crownTextBox_sendRate.BorderStyle = BorderStyle.FixedSingle;
+            crownTextBox_sendRate.ForeColor = Color.FromArgb(220, 220, 220);
+            crownTextBox_sendRate.Location = new Point(412, 61);
+            crownTextBox_sendRate.Name = "crownTextBox_sendRate";
+            crownTextBox_sendRate.Size = new Size(43, 22);
+            crownTextBox_sendRate.TabIndex = 21;
             // 
             // MainForm
             // 
@@ -1028,8 +1054,10 @@
         private ReaLTaiizor.Controls.Button button7;
         private ReaLTaiizor.Controls.Button button6;
         private ReaLTaiizor.Controls.CrownTextBox crownTextBox_addr12;
-        private ReaLTaiizor.Controls.ForeverLabel foreverLabel6;
         private ReaLTaiizor.Controls.CrownTextBox crownTextBox_addr32;
-        private ReaLTaiizor.Controls.ForeverLabel foreverLabel7;
+        private CheckBox checkBox_s12;
+        private CheckBox checkBox_s32;
+        private ReaLTaiizor.Controls.ForeverLabel foreverLabel6;
+        private ReaLTaiizor.Controls.CrownTextBox crownTextBox_sendRate;
     }
 }
