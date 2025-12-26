@@ -510,6 +510,9 @@ namespace jiazhua
         private readonly object serialLock = new object(); // 锁，保证线程安全
         private byte[] lastValidPacket12 = null;
         private byte[] lastValidPacket32 = null;
+        // 错误数据包计数，用于检测连续错误
+        private int consecutiveErrorPackets = 0;
+        private const int MaxConsecutiveErrors = 10; // 连续10个错误包后可能需要重置
         public class ListStringPool
         {
             private readonly ConcurrentBag<List<string>> pool = new ConcurrentBag<List<string>>();
@@ -853,6 +856,13 @@ namespace jiazhua
                             CopyFromRingBuffer(recvBuffer, recvHead, packet, length, MaxBufferSize);
                             recvHead = (recvHead + length) % MaxBufferSize;
 
+                            // 严格验证：检查数据包长度是否与实际内容匹配
+                            if (packet.Length < length || length < 6)
+                            {
+                                pool.Return(packet);
+                                continue;
+                            }
+
                             // 校验和
                             byte checksum = 0;
                             var packetSpan = packet.AsSpan(2, length - 3);
@@ -861,11 +871,21 @@ namespace jiazhua
 
                             if (checksum == packet[length - 1])
                             {
-                                // 校验通过，解锁后入队
+                                // 校验通过，重置错误计数
+                                consecutiveErrorPackets = 0;
+                                // 校验通过，但需要进一步验证数据包完整性
+                                // 在 EnqueuePacket 中会进行更详细的验证
                                 EnqueuePacket(packet);
                             }
                             else
                             {
+                                // 校验失败，记录并丢弃
+                                consecutiveErrorPackets++;
+                                if (consecutiveErrorPackets >= MaxConsecutiveErrors)
+                                {
+                                    SafeLogger.LogException("连续校验失败", new Exception($"连续 {consecutiveErrorPackets} 个数据包校验失败，可能存在数据同步问题"));
+                                    consecutiveErrorPackets = 0; // 重置计数，避免日志刷屏
+                                }
                                 pool.Return(packet);
                             }
                         }
@@ -921,12 +941,46 @@ namespace jiazhua
         {
             try
             {
-                if (packet.Length < 10) return;
+                if (packet == null || packet.Length < 10) return;
 
                 int length = packet[2];
                 byte addr = packet[3];
                 byte type = packet[4];
+                
+                // 严格验证：数据包长度必须与实际数组长度一致
+                if (packet.Length < length)
+                {
+                    SafeLogger.LogException("数据包长度不匹配", new Exception($"声明长度: {length}, 实际长度: {packet.Length}"));
+                    return;
+                }
+                
                 if (addr != 1 && addr != 2) return;
+                
+                // 根据类型和地址验证数据包长度
+                int expectedLength = 0;
+                if (addr == 1) // S12
+                {
+                    if (type == 0xF4) // 温度：包头(3) + 地址(1) + 类型(1) + 其他头部(8) + 数据(12*2) + 校验(1) = 38
+                        expectedLength = 3 + 1 + 1 + 8 + 12 * 2 + 1;
+                    else if (type == 0xF5) // 压力：包头(3) + 地址(1) + 类型(1) + 其他头部(8) + 数据(12*4) + 校验(1) = 62
+                        expectedLength = 3 + 1 + 1 + 8 + 12 * 4 + 1;
+                }
+                else if (addr == 2) // S32
+                {
+                    if (type == 0xF4) // 温度：包头(3) + 地址(1) + 类型(1) + 其他头部(8) + 数据(32*2) + 校验(1) = 78
+                        expectedLength = 3 + 1 + 1 + 8 + 32 * 2 + 1;
+                    else if (type == 0xF5) // 压力：包头(3) + 地址(1) + 类型(1) + 其他头部(8) + 数据(32*4) + 校验(1) = 142
+                        expectedLength = 3 + 1 + 1 + 8 + 32 * 4 + 1;
+                }
+                
+                // 验证数据包长度是否匹配（允许±2的误差，因为可能有其他字段）
+                if (expectedLength > 0 && Math.Abs(length - expectedLength) > 2)
+                {
+                    // 长度不匹配时，记录但不立即返回，因为可能数据包格式有变化
+                    // 但会在后续的数据读取时进行更严格的验证
+                    SafeLogger.LogException("数据包长度验证警告", new Exception($"地址: {addr}, 类型: 0x{type:X2}, 期望长度: {expectedLength}, 实际长度: {length}"));
+                    // 不返回，继续处理，让后续的数据读取验证来过滤
+                }
 
                 if (addr == 1)
                 {
@@ -938,6 +992,14 @@ namespace jiazhua
                     // 如果是温度数据 (F4)
                     if (type == 0xF4)
                     {
+                        // 验证数据长度是否足够
+                        int requiredLength = dataOffset + 12 * 2;
+                        if (packet.Length < requiredLength)
+                        {
+                            SafeLogger.LogException("温度数据包长度不足", new Exception($"需要: {requiredLength}, 实际: {packet.Length}"));
+                            return;
+                        }
+                        
                         for (int i = 0; i < 12; i++)
                         {
                             if (dataOffset + i * 2 + 1 >= packet.Length) break;
@@ -961,10 +1023,19 @@ namespace jiazhua
                     // 如果是压力数据 (F5)
                     else if (type == 0xF5)
                     {
+                        // 验证数据长度是否足够
+                        int requiredLength = dataOffset + 12 * 4;
+                        if (packet.Length < requiredLength)
+                        {
+                            SafeLogger.LogException("压力数据包长度不足", new Exception($"需要: {requiredLength}, 实际: {packet.Length}"));
+                            return;
+                        }
+                        
                         for (int i = 0; i < 12; i++)
                         {
                             if (dataOffset + i * 4 + 3 >= packet.Length) break;
-                            double v = BitConverter.ToInt32(packet, dataOffset + i * 4);
+                            // 修复：使用 BinaryPrimitives 确保小端序读取
+                            double v = BinaryPrimitives.ReadInt32LittleEndian(packet.AsSpan(dataOffset + i * 4, 4));
                             if (guiyihua)
                             {
                                 v = v / 1000.0; // Kpa
@@ -1033,7 +1104,7 @@ namespace jiazhua
                         {
                             double rawV = finalData12.TemperatureData[i];
                             int channelIndex = i;
-                            double filedV = DenoiseByMedian_temp12(channelIndex, rawV);
+                            double filedV = DenoiseByMedian(channelIndex, rawV, channelBuffers_temp12);
                             fileData.Add(filedV.ToString("F2"));
                         }
                         for (int i = 0; i < 12; i++)
@@ -1041,7 +1112,7 @@ namespace jiazhua
                             double rawV = finalData12.PressureData[i];
                             int channelIndex = i;
                             double zeroedV = rawV - channelZeroOffsets12[channelIndex];
-                            double filedV = DenoiseByMedian_filedata12(channelIndex, zeroedV);
+                            double filedV = DenoiseByMedian(channelIndex, zeroedV, channelBuffers_filedata12);
                             fileData.Add(filedV.ToString("F3"));
                         }
                         if (isSaving12)
@@ -1072,6 +1143,14 @@ namespace jiazhua
                     // 如果是温度数据 (F4)
                     if (type == 0xF4)
                     {
+                        // 验证数据长度是否足够
+                        int requiredLength = dataOffset + 32 * 2;
+                        if (packet.Length < requiredLength)
+                        {
+                            SafeLogger.LogException("温度数据包长度不足", new Exception($"需要: {requiredLength}, 实际: {packet.Length}"));
+                            return;
+                        }
+                        
                         for (int i = 0; i < 32; i++)
                         {
                             if (dataOffset + i * 2 + 1 >= packet.Length) break;
@@ -1096,10 +1175,19 @@ namespace jiazhua
                     // 如果是压力数据 (F5)
                     else if (type == 0xF5)
                     {
+                        // 验证数据长度是否足够
+                        int requiredLength = dataOffset + 32 * 4;
+                        if (packet.Length < requiredLength)
+                        {
+                            SafeLogger.LogException("压力数据包长度不足", new Exception($"需要: {requiredLength}, 实际: {packet.Length}"));
+                            return;
+                        }
+                        
                         for (int i = 0; i < 32; i++)
                         {
                             if (dataOffset + i * 4 + 3 >= packet.Length) break;
-                            double v = BitConverter.ToInt32(packet, dataOffset + i * 4);
+                            // 修复：使用 BinaryPrimitives 确保小端序读取
+                            double v = BinaryPrimitives.ReadInt32LittleEndian(packet.AsSpan(dataOffset + i * 4, 4));
                             if (guiyihua)
                             {
                                 v = v / 1000.0; // Kpa
@@ -1169,7 +1257,7 @@ namespace jiazhua
                         {
                             double rawV = finalData32.TemperatureData[i];
                             int channelIndex = i;
-                            double filedV = DenoiseByMedian_temp32(channelIndex, rawV);
+                            double filedV = DenoiseByMedian(channelIndex, rawV, channelBuffers_temp32);
                             fileData.Add(filedV.ToString("F2"));
                         }
                         for (int i = 0; i < 32; i++)
@@ -1177,7 +1265,7 @@ namespace jiazhua
                             double rawV = finalData32.PressureData[i];
                             int channelIndex = i;
                             double zeroedV = rawV - channelZeroOffsets32[channelIndex];
-                            double filedV = DenoiseByMedian_filedata32(channelIndex, zeroedV);
+                            double filedV = DenoiseByMedian(channelIndex, zeroedV, channelBuffers_filedata32);
                             fileData.Add(filedV.ToString("F3"));
                         }
                         if (isSaving32)
@@ -1233,129 +1321,54 @@ namespace jiazhua
             }
         }
 
-        private double DenoiseByMedian_temp12(int channelIndex, double newValue)
+        private double DenoiseByMedian(int channelIndex, double newValue, Dictionary<int, Queue<double>> channelBuffers)
         {
-            if (!channelBuffers_temp12.ContainsKey(channelIndex))
-                channelBuffers_temp12[channelIndex] = new Queue<double>();
+            Dictionary<int, Queue<double>> channelBuf = channelBuffers;
+            if (!channelBuf.ContainsKey(channelIndex))
+                channelBuf[channelIndex] = new Queue<double>();
 
-            var buffer = channelBuffers_temp12[channelIndex];
+            var buffer = channelBuf[channelIndex];
 
-            // 添加新值
+            // 添加新值到队列
             buffer.Enqueue(newValue);
-            if (buffer.Count > 4)
+
+            // 保持队列长度不超过3
+            if (buffer.Count > 3)
                 buffer.Dequeue();
 
-            // 数据量不足直接返回
+            // 队列不足3个点，直接返回新值
             if (buffer.Count < 3)
                 return newValue;
 
-            // 转数组排序
-            double[] arr = buffer.ToArray();
-            double[] sorted = arr.OrderBy(v => v).ToArray();
-            double median = sorted[sorted.Length / 2];
+            // 转成数组，方便索引
+            double[] arr = buffer.ToArray(); // [前, 中, 新]
+            double prev = arr[0];
+            double curr = arr[1];
+            double next = arr[2];
 
-            // 计算中位绝对偏差 (MAD)
-            double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // 动态阈值, 保证极小MAD也有最小阈值
+            // 自定义阈值（根据实际数据调整）
+            double threshold = 1200; // 例如1000，可根据传感器范围调整
+            if (guiyihua)
+            {
+                threshold = 1.2;
+            }
 
-            // 如果新值偏离中位数过大，视为异常，用中位数替代
-            if (Math.Abs(newValue - median) > threshold)
-                newValue = median;
+            // 判断中间点是否为杂峰：与前后都差距大
+            if (Math.Abs(curr - prev) > threshold && Math.Abs(curr - next) > threshold)
+            {
+                // 杂峰，返回前后平均值
+                double denoised = (prev + next) / 2;
 
-            return newValue;
-        }
-        private double DenoiseByMedian_filedata12(int channelIndex, double newValue)
-        {
-            if (!channelBuffers_filedata12.ContainsKey(channelIndex))
-                channelBuffers_filedata12[channelIndex] = new Queue<double>();
+                // 替换中间值为平滑值，保证后续判断正确
+                buffer.Dequeue();           // 移除最旧值（prev）
+                buffer.Dequeue();           // 移除原curr
+                buffer.Enqueue(denoised);   // 插入平滑值
+                buffer.Enqueue(next);       // 保留最新值
+                return denoised;
+            }
 
-            var buffer = channelBuffers_filedata12[channelIndex];
-
-            // 添加新值
-            buffer.Enqueue(newValue);
-            if (buffer.Count > 4)
-                buffer.Dequeue();
-
-            // 数据量不足直接返回
-            if (buffer.Count < 3)
-                return newValue;
-
-            // 转数组排序
-            double[] arr = buffer.ToArray();
-            double[] sorted = arr.OrderBy(v => v).ToArray();
-            double median = sorted[sorted.Length / 2];
-
-            // 计算中位绝对偏差 (MAD)
-            double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // 动态阈值, 保证极小MAD也有最小阈值
-
-            // 如果新值偏离中位数过大，视为异常，用中位数替代
-            if (Math.Abs(newValue - median) > threshold)
-                newValue = median;
-
-            return newValue;
-        }
-        private double DenoiseByMedian_temp32(int channelIndex, double newValue)
-        {
-            if (!channelBuffers_temp32.ContainsKey(channelIndex))
-                channelBuffers_temp32[channelIndex] = new Queue<double>();
-
-            var buffer = channelBuffers_temp32[channelIndex];
-
-            // 添加新值
-            buffer.Enqueue(newValue);
-            if (buffer.Count > 4)
-                buffer.Dequeue();
-
-            // 数据量不足直接返回
-            if (buffer.Count < 3)
-                return newValue;
-
-            // 转数组排序
-            double[] arr = buffer.ToArray();
-            double[] sorted = arr.OrderBy(v => v).ToArray();
-            double median = sorted[sorted.Length / 2];
-
-            // 计算中位绝对偏差 (MAD)
-            double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // 动态阈值, 保证极小MAD也有最小阈值
-
-            // 如果新值偏离中位数过大，视为异常，用中位数替代
-            if (Math.Abs(newValue - median) > threshold)
-                newValue = median;
-
-            return newValue;
-        }
-        private double DenoiseByMedian_filedata32(int channelIndex, double newValue)
-        {
-            if (!channelBuffers_filedata32.ContainsKey(channelIndex))
-                channelBuffers_filedata32[channelIndex] = new Queue<double>();
-
-            var buffer = channelBuffers_filedata32[channelIndex];
-
-            // 添加新值
-            buffer.Enqueue(newValue);
-            if (buffer.Count > 4)
-                buffer.Dequeue();
-
-            // 数据量不足直接返回
-            if (buffer.Count < 3)
-                return newValue;
-
-            // 转数组排序
-            double[] arr = buffer.ToArray();
-            double[] sorted = arr.OrderBy(v => v).ToArray();
-            double median = sorted[sorted.Length / 2];
-
-            // 计算中位绝对偏差 (MAD)
-            double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // 动态阈值, 保证极小MAD也有最小阈值
-
-            // 如果新值偏离中位数过大，视为异常，用中位数替代
-            if (Math.Abs(newValue - median) > threshold)
-                newValue = median;
-
-            return newValue;
+            // 正常点，直接返回当前值
+            return curr;
         }
         #endregion
 
@@ -1533,7 +1546,7 @@ namespace jiazhua
                         else if (type == "F5") // 压力
                         {
                             double correctedPressure = value - channelZeroOffsets12[channelIndex];
-                            double pressureDenoised = DenoiseByMedian12(channelIndex, correctedPressure);
+                            double pressureDenoised = DenoiseByMedian(channelIndex, correctedPressure, channelBuffers12);
 
                             dotUpdate12.PressureValues[channelIndex] = pressureDenoised;
 
@@ -1665,7 +1678,7 @@ namespace jiazhua
                         else if (type == "F5") // 压力
                         {
                             double correctedPressure = value - channelZeroOffsets32[channelIndex];
-                            double pressureDenoised = DenoiseByMedian32(channelIndex, correctedPressure);
+                            double pressureDenoised = DenoiseByMedian(channelIndex, correctedPressure, channelBuffers32);
 
                             dotUpdate32.PressureValues[channelIndex] = pressureDenoised;
 
@@ -1718,68 +1731,7 @@ namespace jiazhua
                 SafeLogger.LogException("ProcessPacketForUI error", ex);
             }
         }
-        private double DenoiseByMedian12(int channelIndex, double newValue)
-        {
-            if (!channelBuffers12.ContainsKey(channelIndex))
-                channelBuffers12[channelIndex] = new Queue<double>();
 
-            var buffer = channelBuffers12[channelIndex];
-
-            // 添加新值
-            buffer.Enqueue(newValue);
-            if (buffer.Count > 4)
-                buffer.Dequeue();
-
-            // 数据量不足直接返回
-            if (buffer.Count < 3)
-                return newValue;
-
-            // 转数组排序
-            double[] arr = buffer.ToArray();
-            double[] sorted = arr.OrderBy(v => v).ToArray();
-            double median = sorted[sorted.Length / 2];
-
-            // 计算中位绝对偏差 (MAD)
-            double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // 动态阈值, 保证极小MAD也有最小阈值
-
-            // 如果新值偏离中位数过大，视为异常，用中位数替代
-            if (Math.Abs(newValue - median) > threshold)
-                newValue = median;
-
-            return newValue;
-        }
-        private double DenoiseByMedian32(int channelIndex, double newValue)
-        {
-            if (!channelBuffers32.ContainsKey(channelIndex))
-                channelBuffers32[channelIndex] = new Queue<double>();
-
-            var buffer = channelBuffers32[channelIndex];
-
-            // 添加新值
-            buffer.Enqueue(newValue);
-            if (buffer.Count > 4)
-                buffer.Dequeue();
-
-            // 数据量不足直接返回
-            if (buffer.Count < 3)
-                return newValue;
-
-            // 转数组排序
-            double[] arr = buffer.ToArray();
-            double[] sorted = arr.OrderBy(v => v).ToArray();
-            double median = sorted[sorted.Length / 2];
-
-            // 计算中位绝对偏差 (MAD)
-            double mad = sorted.Select(v => Math.Abs(v - median)).OrderBy(d => d).ElementAt(sorted.Length / 2);
-            double threshold = Math.Max(20, 5 * mad); // 动态阈值, 保证极小MAD也有最小阈值
-
-            // 如果新值偏离中位数过大，视为异常，用中位数替代
-            if (Math.Abs(newValue - median) > threshold)
-                newValue = median;
-
-            return newValue;
-        }
         #endregion
 
         #region 绘制线程
