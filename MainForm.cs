@@ -26,7 +26,7 @@ namespace jiazhua
         {
             crownTextBox_addr12.Text = "1";
             crownTextBox_addr32.Text = "2";
-            crownTextBox_sendRate.Text = "50";
+            crownTextBox_sendRate.Text = "25";
             var data = new List<object>();
 
             for (int i = 1; i <= 12; i++)
@@ -671,13 +671,126 @@ namespace jiazhua
                 }
             }
         }
+        /*        private void SerialReadLoop(CancellationToken token)
+                {
+                    byte[] buffer = new byte[4096];
+                    const int MaxBufferSize = 65536;
+                    byte[] recvBuffer = new byte[MaxBufferSize];
+                    int recvHead = 0; // 有效数据起始
+                    int recvTail = 0; // 有效数据末尾
+
+                    ArrayPool<byte> pool = ArrayPool<byte>.Shared;
+
+                    while (!token.IsCancellationRequested && serialPort != null && serialPort.IsOpen)
+                    {
+                        try
+                        {
+                            // === 串口接收 ===
+                            int bytesRead = serialPort.Read(buffer, 0, buffer.Length);
+                            if (bytesRead <= 0) continue;
+
+                            // 工业级优化：减少锁持有时间，先快速复制数据到环形缓冲区
+                            int newTail;
+                            lock (serialLock)
+                            {
+                                // 检查缓冲区空间，防止溢出
+                                int availableSpace = (recvHead - recvTail - 1 + MaxBufferSize) % MaxBufferSize;
+                                if (availableSpace < bytesRead)
+                                {
+                                    // 缓冲区满，丢弃最旧的数据
+                                    int overflow = bytesRead - availableSpace;
+                                    recvHead = (recvHead + overflow) % MaxBufferSize;
+                                    Interlocked.Increment(ref droppedPacketsCount);
+                                }
+
+                                // 批量复制数据到环形缓冲区（比逐个字节快得多）
+                                int firstPart = Math.Min(bytesRead, MaxBufferSize - recvTail);
+                                Buffer.BlockCopy(buffer, 0, recvBuffer, recvTail, firstPart);
+                                if (bytesRead > firstPart)
+                                {
+                                    Buffer.BlockCopy(buffer, firstPart, recvBuffer, 0, bytesRead - firstPart);
+                                }
+                                newTail = (recvTail + bytesRead) % MaxBufferSize;
+                                recvTail = newTail;
+                            }
+
+                            // 修复：恢复原来的逻辑，在锁内完成数据包提取和校验，确保数据包正确入队
+                            lock (serialLock)
+                            {
+                                while (GetAvailableBytes(recvHead, recvTail, MaxBufferSize) >= 6)
+                                {
+                                    if (!(PeekByte(recvBuffer, recvHead, 0, MaxBufferSize) == 0x42 &&
+                                            PeekByte(recvBuffer, recvHead, 1, MaxBufferSize) == 0x54))
+                                    {
+                                        recvHead = (recvHead + 1) % MaxBufferSize;
+                                        continue;
+                                    }
+
+                                    int length = PeekByte(recvBuffer, recvHead, 2, MaxBufferSize);
+                                    // 工业级：增加长度验证，防止异常数据（放宽上限，避免过滤正常数据包）
+                                    if (length < 6 || length > 2048 || GetAvailableBytes(recvHead, recvTail, MaxBufferSize) < length)
+                                    {
+                                        recvHead = (recvHead + 1) % MaxBufferSize;
+                                        continue;
+                                    }
+
+                                    byte[] packet = pool.Rent(length);
+                                    CopyFromRingBuffer(recvBuffer, recvHead, packet, length, MaxBufferSize);
+                                    recvHead = (recvHead + length) % MaxBufferSize;
+
+                                    // 在锁内进行校验和计算（保持原子性）
+                                    byte checksum = 0;
+                                    var packetSpan = packet.AsSpan(2, length - 3);
+                                    foreach (byte b in packetSpan)
+                                    {
+                                        checksum += b;
+                                    }
+
+                                    if (checksum == packet[length - 1])
+                                    {
+                                        // 校验通过，在锁外入队（EnqueuePacket 内部可能有其他操作）
+                                        EnqueuePacket(packet);
+                                    }
+                                    else
+                                    {
+                                        // 校验失败，归还内存
+                                        pool.Return(packet);
+                                    }
+                                }
+                            }
+                        }
+                        catch (TimeoutException)
+                        {
+                            // 超时是正常情况，继续循环
+                        }
+                        catch (IOException ex)
+                        {
+                            // 工业级：IO异常时记录并退出
+                            SafeLogger.LogException("串口IO异常", ex);
+                            break;
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            // 串口关闭等操作异常
+                            SafeLogger.LogException("串口操作异常", ex);
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            if (ex.Message != "The operation was canceled.")
+                            {
+                                SafeLogger.LogException("串口读取异常", ex);
+                            }
+                        }
+                    }
+                }*/
         private void SerialReadLoop(CancellationToken token)
         {
-            byte[] buffer = new byte[4096];
             const int MaxBufferSize = 65536;
             byte[] recvBuffer = new byte[MaxBufferSize];
             int recvHead = 0; // 有效数据起始
             int recvTail = 0; // 有效数据末尾
+            byte[] tempBuffer = new byte[4096];
 
             ArrayPool<byte> pool = ArrayPool<byte>.Shared;
 
@@ -685,75 +798,74 @@ namespace jiazhua
             {
                 try
                 {
-                    // === 串口接收 ===
-                    int bytesRead = serialPort.Read(buffer, 0, buffer.Length);
+                    int bytesRead = serialPort.Read(tempBuffer, 0, tempBuffer.Length);
                     if (bytesRead <= 0) continue;
 
-                    // 工业级优化：减少锁持有时间，先快速复制数据到环形缓冲区
-                    int newTail;
                     lock (serialLock)
                     {
-                        // 检查缓冲区空间，防止溢出
+                        // 写入环形缓冲区
                         int availableSpace = (recvHead - recvTail - 1 + MaxBufferSize) % MaxBufferSize;
                         if (availableSpace < bytesRead)
                         {
-                            // 缓冲区满，丢弃最旧的数据
                             int overflow = bytesRead - availableSpace;
                             recvHead = (recvHead + overflow) % MaxBufferSize;
                             Interlocked.Increment(ref droppedPacketsCount);
                         }
 
-                        // 批量复制数据到环形缓冲区（比逐个字节快得多）
                         int firstPart = Math.Min(bytesRead, MaxBufferSize - recvTail);
-                        Buffer.BlockCopy(buffer, 0, recvBuffer, recvTail, firstPart);
+                        Buffer.BlockCopy(tempBuffer, 0, recvBuffer, recvTail, firstPart);
                         if (bytesRead > firstPart)
-                        {
-                            Buffer.BlockCopy(buffer, firstPart, recvBuffer, 0, bytesRead - firstPart);
-                        }
-                        newTail = (recvTail + bytesRead) % MaxBufferSize;
-                        recvTail = newTail;
+                            Buffer.BlockCopy(tempBuffer, firstPart, recvBuffer, 0, bytesRead - firstPart);
+                        recvTail = (recvTail + bytesRead) % MaxBufferSize;
                     }
 
-                    // 修复：恢复原来的逻辑，在锁内完成数据包提取和校验，确保数据包正确入队
+                    // ---- 解析环形缓冲区数据 ----
                     lock (serialLock)
                     {
                         while (GetAvailableBytes(recvHead, recvTail, MaxBufferSize) >= 6)
                         {
-                            if (!(PeekByte(recvBuffer, recvHead, 0, MaxBufferSize) == 0x42 &&
-                                    PeekByte(recvBuffer, recvHead, 1, MaxBufferSize) == 0x54))
+                            // 找包头
+                            if (PeekByte(recvBuffer, recvHead, 0, MaxBufferSize) != 0x42 ||
+                                PeekByte(recvBuffer, recvHead, 1, MaxBufferSize) != 0x54)
                             {
                                 recvHead = (recvHead + 1) % MaxBufferSize;
                                 continue;
                             }
 
                             int length = PeekByte(recvBuffer, recvHead, 2, MaxBufferSize);
-                            // 工业级：增加长度验证，防止异常数据（放宽上限，避免过滤正常数据包）
-                            if (length < 6 || length > 2048 || GetAvailableBytes(recvHead, recvTail, MaxBufferSize) < length)
+
+                            // 核心改动：半帧不丢，等待下一次接收
+                            if (length < 6 || length > 2048)
                             {
                                 recvHead = (recvHead + 1) % MaxBufferSize;
                                 continue;
                             }
 
+                            int availableBytes = GetAvailableBytes(recvHead, recvTail, MaxBufferSize);
+                            if (availableBytes < length)
+                            {
+                                // 半帧，退出循环等待下一次 Read
+                                break;
+                            }
+
+                            // 拷贝完整帧
                             byte[] packet = pool.Rent(length);
                             CopyFromRingBuffer(recvBuffer, recvHead, packet, length, MaxBufferSize);
                             recvHead = (recvHead + length) % MaxBufferSize;
 
-                            // 在锁内进行校验和计算（保持原子性）
+                            // 校验和
                             byte checksum = 0;
                             var packetSpan = packet.AsSpan(2, length - 3);
                             foreach (byte b in packetSpan)
-                            {
                                 checksum += b;
-                            }
 
                             if (checksum == packet[length - 1])
                             {
-                                // 校验通过，在锁外入队（EnqueuePacket 内部可能有其他操作）
+                                // 校验通过，解锁后入队
                                 EnqueuePacket(packet);
                             }
                             else
                             {
-                                // 校验失败，归还内存
                                 pool.Return(packet);
                             }
                         }
@@ -761,29 +873,26 @@ namespace jiazhua
                 }
                 catch (TimeoutException)
                 {
-                    // 超时是正常情况，继续循环
+                    continue;
                 }
                 catch (IOException ex)
                 {
-                    // 工业级：IO异常时记录并退出
                     SafeLogger.LogException("串口IO异常", ex);
                     break;
                 }
                 catch (InvalidOperationException ex)
                 {
-                    // 串口关闭等操作异常
                     SafeLogger.LogException("串口操作异常", ex);
                     break;
                 }
                 catch (Exception ex)
                 {
                     if (ex.Message != "The operation was canceled.")
-                    {
                         SafeLogger.LogException("串口读取异常", ex);
-                    }
                 }
             }
         }
+
 
         /// <summary> 计算环形缓冲区可用字节数 </summary>
         private static int GetAvailableBytes(int head, int tail, int capacity)
