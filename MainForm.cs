@@ -1004,7 +1004,7 @@ namespace jiazhua
                         {
                             if (dataOffset + i * 2 + 1 >= packet.Length) break;
                             double v = BinaryPrimitives.ReadInt16LittleEndian(packet.AsSpan(dataOffset + i * 2, 2));
-                            values[11 - i] = v / 10;
+                            values[i] = v / 10;
                         }
 
                         // 优化：使用 GetOrAdd 减少字典查找次数
@@ -1045,7 +1045,7 @@ namespace jiazhua
                                 if (v < 0 && v > -1) v = -1;
                             }
 
-                            values[11 - i] = v;
+                            values[i] = v;
                         }
 
                         // 优化：使用 GetOrAdd 减少字典查找次数
@@ -1947,10 +1947,10 @@ namespace jiazhua
 
         private void PlotTimer_Tick(object? sender, EventArgs e)
         {
-            doubleBufferedPanelCloud12.Values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+/*            doubleBufferedPanelCloud12.Values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
             doubleBufferedPanelCloud12.Invalidate();
             doubleBufferedPanelCloud32.Values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
-            doubleBufferedPanelCloud32.Invalidate();
+            doubleBufferedPanelCloud32.Invalidate();*/
             // 用于记录哪些图表需要刷新
             bool refreshPlot1 = false;
             bool refreshPlot2 = false;
