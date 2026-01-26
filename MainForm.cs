@@ -1104,7 +1104,7 @@ namespace jiazhua
                         {
                             double rawV = finalData12.TemperatureData[i];
                             int channelIndex = i;
-                            double filedV = DenoiseByMedian(channelIndex, rawV, channelBuffers_temp12);
+                            double filedV = HampelFilter(channelIndex, rawV, channelBuffers_temp12);
                             fileData.Add(filedV.ToString("F2"));
                         }
                         for (int i = 0; i < 12; i++)
@@ -1112,7 +1112,7 @@ namespace jiazhua
                             double rawV = finalData12.PressureData[i];
                             int channelIndex = i;
                             double zeroedV = rawV - channelZeroOffsets12[channelIndex];
-                            double filedV = DenoiseByMedian(channelIndex, zeroedV, channelBuffers_filedata12);
+                            double filedV = HampelFilter(channelIndex, zeroedV, channelBuffers_filedata12);
                             fileData.Add(filedV.ToString("F3"));
                         }
                         if (isSaving12)
@@ -1257,7 +1257,7 @@ namespace jiazhua
                         {
                             double rawV = finalData32.TemperatureData[i];
                             int channelIndex = i;
-                            double filedV = DenoiseByMedian(channelIndex, rawV, channelBuffers_temp32);
+                            double filedV = HampelFilter(channelIndex, rawV, channelBuffers_temp32);
                             fileData.Add(filedV.ToString("F2"));
                         }
                         for (int i = 0; i < 32; i++)
@@ -1265,7 +1265,7 @@ namespace jiazhua
                             double rawV = finalData32.PressureData[i];
                             int channelIndex = i;
                             double zeroedV = rawV - channelZeroOffsets32[channelIndex];
-                            double filedV = DenoiseByMedian(channelIndex, zeroedV, channelBuffers_filedata32);
+                            double filedV = HampelFilter(channelIndex, zeroedV, channelBuffers_filedata32);
                             fileData.Add(filedV.ToString("F3"));
                         }
                         if (isSaving32)
@@ -1321,6 +1321,11 @@ namespace jiazhua
             }
         }
 
+        /// <summary>
+        /// [已废弃] 原中值滤波算法 - 仅能处理单个杂峰，无法处理连续杂峰
+        /// 已替换为 HampelFilter 算法
+        /// </summary>
+        /*
         private double DenoiseByMedian(int channelIndex, double newValue, Dictionary<int, Queue<double>> channelBuffers)
         {
             Dictionary<int, Queue<double>> channelBuf = channelBuffers;
@@ -1369,6 +1374,104 @@ namespace jiazhua
 
             // 正常点，直接返回当前值
             return curr;
+        }
+        */
+
+        /// <summary>
+        /// Hampel Filter - 工业级异常值检测与滤波算法
+        /// 基于中位数和MAD（中位数绝对偏差）的鲁棒统计方法
+        /// 能够有效处理连续多个杂峰点，适用于传感器数据去噪
+        /// 
+        /// 算法原理：
+        /// 1. 使用滑动窗口（默认7点）收集历史数据
+        /// 2. 计算窗口内数据的中位数（对异常值鲁棒）
+        /// 3. 计算MAD（中位数绝对偏差），比标准差更鲁棒
+        /// 4. 使用Z-score方法检测异常值：|x - median| > threshold * MAD
+        /// 5. 如果检测到异常值，用中位数替代；否则返回原值
+        /// 
+        /// 优势：
+        /// - 能够处理连续2-3个异常值
+        /// - 对异常值不敏感（使用中位数而非均值）
+        /// - 自适应阈值（基于数据本身的分布）
+        /// - 工业标准算法，广泛应用于传感器数据处理
+        /// </summary>
+        /// <param name="channelIndex">通道索引</param>
+        /// <param name="newValue">新采样值</param>
+        /// <param name="channelBuffers">通道缓冲区字典</param>
+        /// <returns>滤波后的值</returns>
+        private double HampelFilter(int channelIndex, double newValue, Dictionary<int, Queue<double>> channelBuffers)
+        {
+            Dictionary<int, Queue<double>> channelBuf = channelBuffers;
+            if (!channelBuf.ContainsKey(channelIndex))
+                channelBuf[channelIndex] = new Queue<double>();
+
+            var buffer = channelBuf[channelIndex];
+
+            // 添加新值到队列
+            buffer.Enqueue(newValue);
+
+            // 工业标准：使用7点窗口（可处理连续2-3个异常值）
+            // 窗口大小选择：5点（最小），7点（推荐），9点（高噪声环境）
+            const int windowSize = 7;
+            if (buffer.Count > windowSize)
+                buffer.Dequeue();
+
+            // 窗口数据不足时，直接返回新值（避免过度滤波）
+            if (buffer.Count < windowSize)
+                return newValue;
+
+            // 转换为数组进行处理
+            double[] arr = new double[windowSize];
+            buffer.CopyTo(arr, 0);
+            
+            // 创建排序副本用于计算中位数（不修改原数组）
+            double[] sorted = new double[windowSize];
+            Array.Copy(arr, sorted, windowSize);
+            Array.Sort(sorted);
+
+            // 计算中位数（对异常值鲁棒）
+            double median = sorted[windowSize / 2];
+
+            // 计算MAD（中位数绝对偏差）
+            // MAD = median(|x_i - median|)
+            double[] deviations = new double[windowSize];
+            for (int i = 0; i < windowSize; i++)
+            {
+                deviations[i] = Math.Abs(arr[i] - median);
+            }
+            Array.Sort(deviations);
+            double mad = deviations[windowSize / 2];
+
+            // MAD缩放因子：1.4826 使MAD在正态分布下等价于标准差
+            // 这是Hampel Filter的标准做法
+            const double madScaleFactor = 1.4826;
+            double scaledMad = madScaleFactor * mad;
+
+            // 工业标准阈值：3.0（对应99.7%置信区间，3-sigma规则）
+            // 可根据实际应用调整：2.5（更敏感）或 3.5（更保守）
+            double threshold = 3.0;
+
+            // 对于归一化数据，使用更小的阈值
+            if (guiyihua)
+            {
+                // 归一化数据通常范围较小，使用相对阈值
+                threshold = 2.5;
+            }
+
+            // 检测中心点（当前点）是否为异常值
+            int centerIndex = windowSize / 2;
+            double centerValue = arr[centerIndex];
+            double zScore = scaledMad > 0 ? Math.Abs(centerValue - median) / scaledMad : 0;
+
+            // 如果Z-score超过阈值，认为是异常值，用中位数替代
+            if (zScore > threshold)
+            {
+                // 异常值：返回中位数（更鲁棒的估计）
+                return median;
+            }
+
+            // 正常值：返回原值（保持数据真实性）
+            return centerValue;
         }
         #endregion
 
@@ -1509,6 +1612,12 @@ namespace jiazhua
                                 }
                             }
 
+                            // 校零完成 - 清理滤波缓冲区，避免新旧基准数据混合影响滤波效果
+                            // 重要：校零后零点偏移改变，滤波缓冲区中的旧数据（基于旧偏移）会与新数据（基于新偏移）混合
+                            // 导致Hampel Filter的中位数和MAD计算不准确，可能误判异常值
+                            channelBuffers12.Clear();           // 实时压力数据滤波缓冲区
+                            channelBuffers_filedata12.Clear();  // 文件保存压力数据滤波缓冲区
+
                             // 校零完成
                             isZeroing12 = false;
                             isSaving12 = true;
@@ -1546,7 +1655,7 @@ namespace jiazhua
                         else if (type == "F5") // 压力
                         {
                             double correctedPressure = value - channelZeroOffsets12[channelIndex];
-                            double pressureDenoised = DenoiseByMedian(channelIndex, correctedPressure, channelBuffers12);
+                            double pressureDenoised = HampelFilter(channelIndex, correctedPressure, channelBuffers12);
 
                             dotUpdate12.PressureValues[channelIndex] = pressureDenoised;
 
@@ -1641,6 +1750,12 @@ namespace jiazhua
                                 }
                             }
 
+                            // 校零完成 - 清理滤波缓冲区，避免新旧基准数据混合影响滤波效果
+                            // 重要：校零后零点偏移改变，滤波缓冲区中的旧数据（基于旧偏移）会与新数据（基于新偏移）混合
+                            // 导致Hampel Filter的中位数和MAD计算不准确，可能误判异常值
+                            channelBuffers32.Clear();           // 实时压力数据滤波缓冲区
+                            channelBuffers_filedata32.Clear();  // 文件保存压力数据滤波缓冲区
+
                             // 校零完成
                             isZeroing32 = false;
                             isSaving32 = true;
@@ -1678,7 +1793,7 @@ namespace jiazhua
                         else if (type == "F5") // 压力
                         {
                             double correctedPressure = value - channelZeroOffsets32[channelIndex];
-                            double pressureDenoised = DenoiseByMedian(channelIndex, correctedPressure, channelBuffers32);
+                            double pressureDenoised = HampelFilter(channelIndex, correctedPressure, channelBuffers32);
 
                             dotUpdate32.PressureValues[channelIndex] = pressureDenoised;
 
