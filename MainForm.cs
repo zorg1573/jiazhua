@@ -1155,7 +1155,7 @@ namespace jiazhua
                         {
                             if (dataOffset + i * 2 + 1 >= packet.Length) break;
                             double v = BinaryPrimitives.ReadInt16LittleEndian(packet.AsSpan(dataOffset + i * 2, 2));
-                            values[31 - i] = v / 10;
+                            values[i] = v / 10;
                         }
 
                         // 优化：使用 GetOrAdd 减少字典查找次数
@@ -1197,7 +1197,7 @@ namespace jiazhua
                                 if (v < 0 && v > -1) v = -1;
                             }
 
-                            values[31 - i] = v;
+                            values[i] = v;
                         }
 
                         // 优化：使用 GetOrAdd 减少字典查找次数
