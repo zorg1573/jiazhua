@@ -1880,7 +1880,7 @@ namespace jiazhua
                 var xs = new List<double>(PlotWindowSize);
                 var ys = new List<double>(PlotWindowSize);
                 var plotable = formsPlot1.Plot.Add.Scatter(xs, ys);
-                plotable.Label = $"CH{ch}";
+                plotable.Label = $"CH{ch+1}";
                 // 平滑刷新优化：启用平滑线条模式，减少视觉跳跃
                 plotable.LineStyle.Width = 1.5f;
                 plotable.MarkerStyle.Size = 0; // 隐藏标记点，减少绘制开销
@@ -1904,7 +1904,7 @@ namespace jiazhua
                 var xs = new List<double>(PlotWindowSize);
                 var ys = new List<double>(PlotWindowSize);
                 var plotable = formsPlot2.Plot.Add.Scatter(xs, ys);
-                plotable.Label = $"CH{ch}";
+                plotable.Label = $"CH{ch+1}";
                 // 平滑刷新优化：启用平滑线条模式，减少视觉跳跃
                 plotable.LineStyle.Width = 1.5f;
                 plotable.MarkerStyle.Size = 0; // 隐藏标记点，减少绘制开销
@@ -2159,6 +2159,7 @@ namespace jiazhua
                 // 假设 selectedText 格式为 "CH0", "CH1", ...
                 if (selectedText.StartsWith("CH") && int.TryParse(selectedText.Substring(2), out int channelIndex))
                 {
+                    channelIndex = channelIndex - 1;
                     // 构建字典 Key
                     int key = sensorIndex * KeyMultiplier + channelIndex;
 
