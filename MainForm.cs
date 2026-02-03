@@ -210,11 +210,13 @@ namespace jiazhua
 
         #region 串口
         private SerialPort serialPort = new SerialPort();
-        private StreamWriter packetWriter;
+        private StreamWriter packetWriter12;
+        private StreamWriter packetWriter32;
         private Thread serialThread;
         private Thread serialSendThread;
         private CancellationTokenSource cts;
-        private List<string> biaoTouName = new List<string> { "LogTime", "Sensor", };
+        private List<string> biaoTouName12 = new List<string>();
+        private List<string> biaoTouName32 = new List<string>();
         byte[][] memsCommands = new byte[2][];
         private int s12addr = 1;
         private int s32addr = 2;
@@ -297,9 +299,15 @@ namespace jiazhua
                 //serialPort.Close();
                 CloseSerialPort();
 
-                packetWriter?.Flush();
-                packetWriter?.Close();
-                packetWriter = null;
+                // 关闭12通道文件写入器
+                packetWriter12?.Flush();
+                packetWriter12?.Close();
+                packetWriter12 = null;
+
+                // 关闭32通道文件写入器
+                packetWriter32?.Flush();
+                packetWriter32?.Close();
+                packetWriter32 = null;
 
                 label_port.Text = "未连接";
             }
@@ -360,16 +368,56 @@ namespace jiazhua
                 serialSendThread.Start();
 
                 savePath = crownTextBox_save.Text;
-                // 生成文件路径
-                string fileSavePath = System.IO.Path.Combine(savePath,
-                    $"MEMS_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+                
+                // 生成12通道文件路径和表头
+                if (checkBox_s12.Checked)
+                {
+                    string fileSavePath12 = System.IO.Path.Combine(savePath,
+                        $"Gripper12_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+                    
+                    // 构建12通道表头：LogTime, Sensor, T1-T12, P1-P12
+                    biaoTouName12.Clear();
+                    biaoTouName12.Add("LogTime");
+                    biaoTouName12.Add("Sensor");
+                    for (int i = 1; i <= 12; i++)
+                    {
+                        biaoTouName12.Add($"T{i}");
+                    }
+                    for (int i = 1; i <= 12; i++)
+                    {
+                        biaoTouName12.Add($"P{i}");
+                    }
+                    
+                    // 创建12通道 StreamWriter 并写入表头
+                    packetWriter12 = new StreamWriter(fileSavePath12, true, new System.Text.UTF8Encoding(false));
+                    packetWriter12.WriteLine(string.Join(",", biaoTouName12));
+                    packetWriter12.AutoFlush = true;
+                }
 
-                // 创建全局 StreamWriter，不写表头
-                packetWriter = new StreamWriter(fileSavePath, true, new System.Text.UTF8Encoding(false));
-
-                packetWriter.WriteLine(string.Join(",", biaoTouName));
-
-                packetWriter.AutoFlush = true;
+                // 生成32通道文件路径和表头
+                if (checkBox_s32.Checked)
+                {
+                    string fileSavePath32 = System.IO.Path.Combine(savePath,
+                        $"Gripper32_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+                    
+                    // 构建32通道表头：LogTime, Sensor, T1-T32, P1-P32
+                    biaoTouName32.Clear();
+                    biaoTouName32.Add("LogTime");
+                    biaoTouName32.Add("Sensor");
+                    for (int i = 1; i <= 32; i++)
+                    {
+                        biaoTouName32.Add($"T{i}");
+                    }
+                    for (int i = 1; i <= 32; i++)
+                    {
+                        biaoTouName32.Add($"P{i}");
+                    }
+                    
+                    // 创建32通道 StreamWriter 并写入表头
+                    packetWriter32 = new StreamWriter(fileSavePath32, true, new System.Text.UTF8Encoding(false));
+                    packetWriter32.WriteLine(string.Join(",", biaoTouName32));
+                    packetWriter32.AutoFlush = true;
+                }
 
                 StartWorkers();
             }
@@ -403,13 +451,17 @@ namespace jiazhua
         #endregion
 
         #region 文件存储线程
-        private readonly BlockingCollection<string> fileQueue = new BlockingCollection<string>(new ConcurrentQueue<string>(), 20000);
+        private readonly BlockingCollection<string> fileQueue12 = new BlockingCollection<string>(new ConcurrentQueue<string>(), 20000);
+        private readonly BlockingCollection<string> fileQueue32 = new BlockingCollection<string>(new ConcurrentQueue<string>(), 20000);
         private readonly BlockingCollection<List<string>> fileRawQueue = new BlockingCollection<List<string>>(new ConcurrentQueue<List<string>>(), 20000);
-        private Thread fileWriterThread;
+        private Thread fileWriterThread12;
+        private Thread fileWriterThread32;
         private Thread formatThread;
-        private object saveLock = new object();
+        private object saveLock12 = new object();
+        private object saveLock32 = new object();
         private long totalPacketCount = 0;
-        private long savedPacketCount = 0;
+        private long savedPacketCount12 = 0;
+        private long savedPacketCount32 = 0;
 
         private void StartWorkers()
         {
@@ -417,38 +469,44 @@ namespace jiazhua
             formatThread = new Thread(FormatWorkerLoop) { IsBackground = true, Name = "FormatWorker" };
             formatThread.Start();
 
-            // 你原来的 fileWriterThread 维持不变
-            fileWriterThread = new Thread(FileWriterLoop) { IsBackground = true, Name = "FileWriter" };
-            fileWriterThread.Start();
+            // 启动两个独立的文件写入线程
+            fileWriterThread12 = new Thread(() => FileWriterLoop12()) 
+                { IsBackground = true, Name = "FileWriter12" };
+            fileWriterThread12.Start();
+
+            fileWriterThread32 = new Thread(() => FileWriterLoop32()) 
+                { IsBackground = true, Name = "FileWriter32" };
+            fileWriterThread32.Start();
         }
-        private void FileWriterLoop()
+        private void FileWriterLoop12()
         {
             try
             {
-                while (!fileQueue.IsCompleted)
+                while (!fileQueue12.IsCompleted)
                 {
                     var batch = new List<string>();
-                    while (fileQueue.TryTake(out var line))
+                    while (fileQueue12.TryTake(out var line))
                         batch.Add(line);
 
-                    if (batch.Count > 0)
+                    if (batch.Count > 0 && packetWriter12 != null)
                     {
-                        lock (saveLock)
+                        lock (saveLock12)
                         {
                             foreach (var line in batch)
                             {
-                                packetWriter.WriteLine(line);
-                                Interlocked.Increment(ref savedPacketCount);
+                                packetWriter12.WriteLine(line);
+                                Interlocked.Increment(ref savedPacketCount12);
                             }
-                            packetWriter.Flush();
+                            packetWriter12.Flush();
                         }
 
-                        // UI 更新（保持你的逻辑）
+                        // UI 更新（显示两个传感器的总包数）
+                        long totalSaved = Interlocked.Read(ref savedPacketCount12) + Interlocked.Read(ref savedPacketCount32);
                         if (label_save.InvokeRequired)
                             label_save.BeginInvoke(new Action(() =>
-                                label_save.Text = $"已存包数: {savedPacketCount}"));
+                                label_save.Text = $"已存包数: {totalSaved} (S12:{savedPacketCount12}, S32:{savedPacketCount32})"));
                         else
-                            label_save.Text = $"已存包数: {savedPacketCount}";
+                            label_save.Text = $"已存包数: {totalSaved} (S12:{savedPacketCount12}, S32:{savedPacketCount32})";
                     }
 
                     Thread.Sleep(1);
@@ -457,7 +515,47 @@ namespace jiazhua
             catch (Exception ex)
             {
                 // 工业级：文件写线程异常时记录但不弹窗（避免阻塞）
-                SafeLogger.LogException("文件写线程异常", ex);
+                SafeLogger.LogException("文件写线程12异常", ex);
+            }
+        }
+        private void FileWriterLoop32()
+        {
+            try
+            {
+                while (!fileQueue32.IsCompleted)
+                {
+                    var batch = new List<string>();
+                    while (fileQueue32.TryTake(out var line))
+                        batch.Add(line);
+
+                    if (batch.Count > 0 && packetWriter32 != null)
+                    {
+                        lock (saveLock32)
+                        {
+                            foreach (var line in batch)
+                            {
+                                packetWriter32.WriteLine(line);
+                                Interlocked.Increment(ref savedPacketCount32);
+                            }
+                            packetWriter32.Flush();
+                        }
+
+                        // UI 更新（显示两个传感器的总包数）
+                        long totalSaved = Interlocked.Read(ref savedPacketCount12) + Interlocked.Read(ref savedPacketCount32);
+                        if (label_save.InvokeRequired)
+                            label_save.BeginInvoke(new Action(() =>
+                                label_save.Text = $"已存包数: {totalSaved} (S12:{savedPacketCount12}, S32:{savedPacketCount32})"));
+                        else
+                            label_save.Text = $"已存包数: {totalSaved} (S12:{savedPacketCount12}, S32:{savedPacketCount32})";
+                    }
+
+                    Thread.Sleep(1);
+                }
+            }
+            catch (Exception ex)
+            {
+                // 工业级：文件写线程异常时记录但不弹窗（避免阻塞）
+                SafeLogger.LogException("文件写线程32异常", ex);
             }
         }
         private void FormatWorkerLoop()
@@ -466,14 +564,25 @@ namespace jiazhua
             {
                 foreach (var packet in fileRawQueue.GetConsumingEnumerable())
                 {
-                    string line = "";
-                    line = FormatPacketToOneCsvLineFast(packet);
+                    if (packet == null || packet.Count == 0) continue;
+
+                    // 根据第一个元素判断是12通道还是32通道
+                    string sensorType = packet[0];
+                    string line = FormatPacketToOneCsvLineFast(packet);
 
                     if (line == null) continue;
 
-                    // fileQueue 有界 + 丢最旧，确保不堆积
-                    if (fileQueue.Count >= 20000) fileQueue.TryTake(out _);
-                    fileQueue.Add(line);
+                    // 根据传感器类型分别放入不同的队列
+                    if (sensorType == "S12")
+                    {
+                        if (fileQueue12.Count >= 20000) fileQueue12.TryTake(out _);
+                        fileQueue12.Add(line);
+                    }
+                    else if (sensorType == "S32")
+                    {
+                        if (fileQueue32.Count >= 20000) fileQueue32.TryTake(out _);
+                        fileQueue32.Add(line);
+                    }
                 }
             }
             catch (Exception ex)
